@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: 'Inter Variable', system-ui, sans-serif;
+  --font-grotesk: 'Space Grotesk Variable', system-ui, sans-serif;
+}
+
+html {
+  background-color: #07070f;
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-night-950 text-slate-200 font-sans antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+/* Área segura para PWA instalada (notch / barra de gestos) */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-night-700/60 bg-night-850 p-4;
+  }
+  .btn-primary {
+    @apply rounded-xl bg-accent-600 px-4 py-3 font-display font-semibold text-white
+      transition-transform active:scale-95 disabled:opacity-40;
+  }
+  .btn-ghost {
+    @apply rounded-xl border border-night-600 px-4 py-3 font-medium text-slate-300
+      transition-transform active:scale-95;
+  }
+  .input {
+    @apply w-full rounded-xl border border-night-600 bg-night-800 px-4 py-3
+      text-slate-100 placeholder:text-slate-500 outline-none
+      focus:border-accent-500 focus:ring-1 focus:ring-accent-500;
+  }
+}
+
+/* Barra de scroll discreta */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
