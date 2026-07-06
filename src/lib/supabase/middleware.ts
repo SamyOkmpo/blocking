@@ -6,6 +6,18 @@ const PUBLIC_PATHS = ['/login', '/manifest.webmanifest', '/sw.js'];
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
+  // Sin configurar Supabase (deploy recién creado): manda todo a /login,
+  // que muestra las instrucciones de configuración en vez de un error 500.
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    if (request.nextUrl.pathname === '/login') return supabaseResponse;
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

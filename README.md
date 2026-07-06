@@ -9,58 +9,45 @@ PWA de auto-disciplina gamificada: programas **bloques de enfoque** con tareas, 
 - **Next.js 14** (App Router) + TypeScript
 - **Tailwind CSS** (tema oscuro, acento violeta, tipografías Inter + Space Grotesk)
 - **Supabase** (auth email/password + Postgres con RLS)
-- **PWA**: manifest + service worker propio (instalable, offline básico, web-push)
-- **Vercel** (deploy + cron de notificaciones push)
+- **PWA**: manifest + service worker propio (instalable, offline básico)
+- **Vercel** (deploy)
 
-## Puesta en marcha
+## Puesta en marcha (3 pasos)
 
 ### 1. Supabase
 
-1. Crea un proyecto en [supabase.com](https://supabase.com).
+1. Crea un proyecto gratis en [supabase.com](https://supabase.com).
 2. Abre **SQL Editor → New query**, pega el contenido completo de
    [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql) y ejecútalo.
-3. En **Authentication → Providers → Email** deja habilitado Email/Password.
-   - Para probar sin confirmación de correo: **Authentication → Settings → desactiva "Confirm email"**.
-4. Copia de **Project Settings → API**: la URL del proyecto, la `anon key` y la `service_role key`.
+3. Para probar sin confirmación de correo: **Authentication → Sign In / Up → desactiva "Confirm email"**.
+4. Copia de **Project Settings → API**: la **Project URL** y la **anon key**.
 
-### 2. Variables de entorno
+### 2. Deploy en Vercel
+
+1. Importa el repo en [vercel.com](https://vercel.com) (o usa el proyecto ya creado).
+2. En **Settings → Environment Variables** agrega:
+
+   | Variable | Valor |
+   |---|---|
+   | `NEXT_PUBLIC_SUPABASE_URL` | Project URL de Supabase |
+   | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key de Supabase |
+
+3. Redeploy (Deployments → ⋯ → Redeploy). Listo.
+
+> Si abres la app sin estas variables, verás un aviso de configuración en la pantalla de login en lugar de un error.
+
+### 3. Instalar en el celular
+
+- **Android (Chrome):** menú ⋮ → *Instalar aplicación*.
+- **iPhone (Safari):** Compartir → *Añadir a pantalla de inicio*.
+
+## Desarrollo local
 
 ```bash
-cp .env.example .env.local
-```
-
-Rellena:
-
-| Variable | De dónde sale |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Project Settings → API |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API (solo servidor, para el cron) |
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | `npx web-push generate-vapid-keys` |
-| `VAPID_SUBJECT` | `mailto:tu-email@ejemplo.com` |
-| `CRON_SECRET` | cualquier string largo y aleatorio |
-
-### 3. Desarrollo local
-
-```bash
+cp .env.example .env.local   # y rellena las 2 variables
 npm install
 npm run dev
 ```
-
-Abre http://localhost:3000. El service worker y las notificaciones push requieren HTTPS en producción (en localhost funcionan).
-
-### 4. Deploy en Vercel
-
-1. Importa el repo en [vercel.com](https://vercel.com).
-2. Añade **todas** las variables de entorno anteriores en Project Settings → Environment Variables (incluida `CRON_SECRET` — Vercel la usa para autenticar el cron automáticamente).
-3. Deploy. `vercel.json` ya define el cron `*/5 * * * *` que dispara `/api/cron/notifications`.
-
-> ⚠️ **Plan Hobby de Vercel:** los crons solo pueden ejecutarse 1 vez al día, así que el push "5 minutos antes" necesita el plan Pro. Sin cron frecuente, las **notificaciones locales** (programadas mientras la app está abierta) siguen funcionando.
-
-### 5. Instalar en el celular
-
-- **Android (Chrome):** menú ⋮ → *Instalar aplicación*.
-- **iPhone (Safari):** Compartir → *Añadir a pantalla de inicio*. Las notificaciones push en iOS requieren iOS 16.4+ **y** que la app esté instalada.
 
 ## Cómo funciona
 
@@ -71,9 +58,8 @@ Como los bloques se repiten (diario / días de la semana), el estado de cada dí
 - `time_blocks` + `tasks`: la **plantilla** (qué, cuándo, con qué checklist).
 - `block_sessions`: la **instancia de un bloque en una fecha** (`active` → `completed` | `failed`), con el XP ganado.
 - `task_completions`: qué tareas se marcaron en esa sesión.
-- `user_stats`: racha actual/máxima, XP total, nivel, contadores y zona horaria (para el cron).
+- `user_stats`: racha actual/máxima, XP total, nivel y contadores.
 - `achievements`: logros desbloqueados.
-- `push_subscriptions` + `sent_notifications`: suscripciones web-push y registro anti-duplicados del cron.
 
 Todas las tablas tienen **RLS**: cada usuario solo ve y modifica lo suyo.
 
@@ -90,8 +76,7 @@ Todas las tablas tienen **RLS**: cada usuario solo ve y modifica lo suyo.
 
 ### Notificaciones
 
-- **Locales**: programadas en el cliente para los bloques de hoy (aviso 5 min antes y recordatorio a 10 min del final).
-- **Push (servidor)**: el cron de Vercel consulta cada 5 min los bloques próximos según la **zona horaria de cada usuario** y envía web-push aunque la app esté cerrada.
+Notificaciones **locales** (Web Notifications API + service worker), sin servidor de push: al activarlas en **Ajustes**, la app programa para los bloques de hoy un aviso 5 minutos antes de empezar y un recordatorio a 10 minutos del final. Funcionan mientras la app está abierta o en segundo plano reciente; con la app totalmente cerrada no hay avisos (eso requeriría infraestructura de web-push, que se dejó fuera a propósito para simplificar el deploy).
 
 ## Estructura
 
@@ -106,10 +91,8 @@ src/
       bloques/nuevo/       # crear bloque
       bloques/[id]/        # editar / eliminar bloque
       ajustes/             # notificaciones, sesión, instalación
-    api/push/subscribe/    # guarda suscripciones web-push
-    api/cron/notifications/# cron de push (Vercel)
   components/              # AppProvider, LockScreen, RewardOverlay, Heatmap…
   lib/                     # gamificación, niveles, logros, tiempo, sonido
 supabase/migrations/       # esquema + RLS
-public/sw.js               # service worker (offline + push)
+public/sw.js               # service worker (offline + clic en notificaciones)
 ```

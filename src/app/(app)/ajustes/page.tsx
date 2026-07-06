@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { subscribeToPush } from '@/lib/notifications';
+import { enableNotifications } from '@/lib/notifications';
 
 export default function AjustesPage() {
   const router = useRouter();
@@ -11,8 +11,7 @@ export default function AjustesPage() {
   const [notifStatus, setNotifStatus] = useState<
     'unknown' | 'granted' | 'denied' | 'default' | 'unsupported'
   >('unknown');
-  const [subscribing, setSubscribing] = useState(false);
-  const [subscribed, setSubscribed] = useState(false);
+  const [enabling, setEnabling] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -23,21 +22,16 @@ export default function AjustesPage() {
       setNotifStatus('unsupported');
     } else {
       setNotifStatus(Notification.permission);
-      navigator.serviceWorker?.getRegistration().then(async (reg) => {
-        const sub = await reg?.pushManager.getSubscription();
-        setSubscribed(Boolean(sub));
-      });
     }
   }, []);
 
   async function handleEnableNotifications() {
-    setSubscribing(true);
-    const ok = await subscribeToPush();
-    setSubscribed(ok);
+    setEnabling(true);
+    await enableNotifications();
     if (typeof Notification !== 'undefined') {
       setNotifStatus(Notification.permission);
     }
-    setSubscribing(false);
+    setEnabling(false);
   }
 
   async function handleLogout() {
@@ -68,7 +62,8 @@ export default function AjustesPage() {
         </h2>
         <p className="mt-1 text-sm text-slate-400">
           Aviso 5 minutos antes de cada bloque y recordatorio cuando queden
-          tareas pendientes cerca del final.
+          tareas pendientes cerca del final. Funcionan mientras la app está
+          abierta (o instalada y en segundo plano reciente).
         </p>
 
         {notifStatus === 'unsupported' && (
@@ -88,12 +83,12 @@ export default function AjustesPage() {
         {(notifStatus === 'default' || notifStatus === 'granted') && (
           <button
             onClick={handleEnableNotifications}
-            disabled={subscribing || subscribed}
+            disabled={enabling || notifStatus === 'granted'}
             className="btn-primary mt-4 w-full"
           >
-            {subscribed
+            {notifStatus === 'granted'
               ? '✓ Notificaciones activas'
-              : subscribing
+              : enabling
                 ? 'Activando…'
                 : 'Activar notificaciones'}
           </button>

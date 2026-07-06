@@ -53,7 +53,6 @@ export interface UserStats {
   total_blocks_completed: number;
   perfect_blocks: number;
   last_streak_date: string | null;
-  timezone: string;
   updated_at: string;
 }
 

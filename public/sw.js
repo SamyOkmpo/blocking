@@ -1,4 +1,4 @@
-/* Service worker de Bloqueo: cache básico offline + notificaciones push. */
+/* Service worker de Bloqueo: cache básico offline + clic en notificaciones. */
 
 const CACHE_NAME = 'bloqueo-v1';
 const STATIC_ASSETS = [
@@ -75,25 +75,7 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
-/* ---- Push ---- */
-self.addEventListener('push', (event) => {
-  let data = { title: 'Bloqueo', body: '', url: '/' };
-  try {
-    data = { ...data, ...event.data.json() };
-  } catch {
-    /* payload no-JSON */
-  }
-  event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: '/icons/icon-192.png',
-      badge: '/icons/badge-72.png',
-      vibrate: [80, 40, 80],
-      data: { url: data.url },
-    })
-  );
-});
-
+/* ---- Notificaciones (locales, mostradas vía registration.showNotification) ---- */
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const url = event.notification.data?.url || '/';

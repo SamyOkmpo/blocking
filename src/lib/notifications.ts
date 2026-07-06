@@ -3,14 +3,6 @@
 import type { TimeBlockWithTasks } from './types';
 import { timeToMinutes } from './time';
 
-/** Convierte la VAPID public key (base64url) al Uint8Array que pide PushManager. */
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = atob(base64);
-  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
-}
-
 export async function ensurePermission(): Promise<boolean> {
   if (typeof Notification === 'undefined') return false;
   if (Notification.permission === 'granted') return true;
@@ -29,40 +21,17 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 }
 
-/**
- * Suscribe el dispositivo a web-push y guarda la suscripción en el servidor.
- * Devuelve true si quedó suscrito.
- */
-export async function subscribeToPush(): Promise<boolean> {
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  if (!publicKey) return false;
+/** Pide permiso de notificaciones y deja el service worker listo. */
+export async function enableNotifications(): Promise<boolean> {
   const granted = await ensurePermission();
-  if (!granted) return false;
-
-  const registration = await registerServiceWorker();
-  if (!registration) return false;
-  await navigator.serviceWorker.ready;
-
-  let subscription = await registration.pushManager.getSubscription();
-  if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey).buffer as ArrayBuffer,
-    });
-  }
-
-  const res = await fetch('/api/push/subscribe', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(subscription.toJSON()),
-  });
-  return res.ok;
+  if (granted) await registerServiceWorker();
+  return granted;
 }
 
 /**
  * Notificaciones locales: programa avisos para los bloques de HOY mientras la
- * app esté abierta. Complementa al push del servidor (que funciona con la app
- * cerrada). Devuelve una función de limpieza.
+ * app esté abierta (en primer plano o background reciente).
+ * Devuelve una función de limpieza.
  */
 export function scheduleLocalNotificationsForToday(
   blocks: TimeBlockWithTasks[]

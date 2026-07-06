@@ -125,16 +125,7 @@ export function AppProvider({
   useEffect(() => {
     refresh();
     registerServiceWorker();
-    // Guarda la zona horaria del dispositivo para el cron de push
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (tz) {
-      supabase
-        .from('user_stats')
-        .update({ timezone: tz })
-        .eq('user_id', userId)
-        .then(() => {});
-    }
-  }, [refresh, supabase, userId]);
+  }, [refresh]);
 
   // Re-evaluar fases cada 5 s y refrescar al volver a la app
   useEffect(() => {

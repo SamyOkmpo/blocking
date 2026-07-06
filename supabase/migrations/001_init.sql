@@ -88,7 +88,6 @@ create table public.user_stats (
   total_blocks_completed int not null default 0,
   perfect_blocks int not null default 0,
   last_streak_date date, -- último día que contó para la racha
-  timezone text not null default 'America/Bogota',
   updated_at timestamptz not null default now()
 );
 
@@ -104,32 +103,7 @@ create table public.achievements (
 );
 
 -- ------------------------------------------------------------
--- 6. Suscripciones de push (web-push / VAPID)
--- ------------------------------------------------------------
-create table public.push_subscriptions (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  endpoint text not null unique,
-  p256dh text not null,
-  auth text not null,
-  created_at timestamptz not null default now()
-);
-
-create index push_subscriptions_user_idx on public.push_subscriptions (user_id);
-
--- Registro de avisos push ya enviados, para que el cron no duplique
-create table public.sent_notifications (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users (id) on delete cascade,
-  time_block_id uuid not null references public.time_blocks (id) on delete cascade,
-  date date not null,
-  kind text not null check (kind in ('pre_start', 'ending_soon')),
-  sent_at timestamptz not null default now(),
-  unique (time_block_id, date, kind)
-);
-
--- ------------------------------------------------------------
--- 7. Crear user_stats automáticamente al registrarse
+-- 6. Crear user_stats automáticamente al registrarse
 -- ------------------------------------------------------------
 create or replace function public.handle_new_user()
 returns trigger
@@ -148,7 +122,7 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- ------------------------------------------------------------
--- 8. Row Level Security: cada usuario solo ve/toca lo suyo
+-- 7. Row Level Security: cada usuario solo ve/toca lo suyo
 -- ------------------------------------------------------------
 alter table public.time_blocks enable row level security;
 alter table public.tasks enable row level security;
@@ -156,8 +130,6 @@ alter table public.block_sessions enable row level security;
 alter table public.task_completions enable row level security;
 alter table public.user_stats enable row level security;
 alter table public.achievements enable row level security;
-alter table public.push_subscriptions enable row level security;
-alter table public.sent_notifications enable row level security;
 
 create policy "own time_blocks" on public.time_blocks
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
@@ -176,11 +148,3 @@ create policy "own user_stats" on public.user_stats
 
 create policy "own achievements" on public.achievements
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
-create policy "own push_subscriptions" on public.push_subscriptions
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
-create policy "own sent_notifications" on public.sent_notifications
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-
--- El cron del servidor usa la service_role key, que salta RLS por diseño.

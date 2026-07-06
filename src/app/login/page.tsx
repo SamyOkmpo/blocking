@@ -4,9 +4,13 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
+const SUPABASE_CONFIGURED = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
+
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClient();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,6 +24,7 @@ export default function LoginPage() {
     setInfo(null);
     setLoading(true);
     try {
+      const supabase = createClient();
       if (mode === 'register') {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
@@ -63,6 +68,18 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {!SUPABASE_CONFIGURED && (
+          <div className="mb-6 rounded-2xl border border-warning/30 bg-warning/10 p-4 text-sm text-slate-300">
+            <p className="font-semibold text-warning">⚙️ Falta configurar Supabase</p>
+            <p className="mt-2">
+              En Vercel → Settings → Environment Variables agrega{' '}
+              <code className="text-accent-300">NEXT_PUBLIC_SUPABASE_URL</code> y{' '}
+              <code className="text-accent-300">NEXT_PUBLIC_SUPABASE_ANON_KEY</code>{' '}
+              (de Supabase → Project Settings → API) y vuelve a desplegar.
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             className="input"
@@ -95,7 +112,10 @@ export default function LoginPage() {
             </p>
           )}
 
-          <button className="btn-primary w-full" disabled={loading}>
+          <button
+            className="btn-primary w-full"
+            disabled={loading || !SUPABASE_CONFIGURED}
+          >
             {loading
               ? 'Un momento…'
               : mode === 'login'
