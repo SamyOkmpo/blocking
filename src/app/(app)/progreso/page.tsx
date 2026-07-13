@@ -9,6 +9,15 @@ import { ACHIEVEMENTS } from '@/lib/achievements';
 import { localDateStr, MONTH_NAMES } from '@/lib/time';
 import type { Achievement, BlockSession } from '@/lib/types';
 
+const CATEGORY_ORDER: [string, string][] = [
+  ['racha', 'Rachas'],
+  ['bloques', 'Bloques'],
+  ['tareas', 'Tareas'],
+  ['perfectos', 'Perfectos'],
+  ['niveles', 'Niveles'],
+  ['especiales', 'Especiales'],
+];
+
 export default function ProgresoPage() {
   const { userId, stats } = useApp();
   const supabase = useMemo(() => createClient(), []);
@@ -158,39 +167,65 @@ export default function ProgresoPage() {
 
       {/* Logros */}
       <section className="card">
-        <h2 className="mb-1 font-display text-sm font-bold text-white">
-          Logros
-        </h2>
-        <p className="mb-4 text-xs text-slate-500">
-          {unlockedTypes.size} de {ACHIEVEMENTS.length} desbloqueados
-        </p>
-        <ul className="grid grid-cols-1 gap-2">
-          {ACHIEVEMENTS.map((a) => {
-            const isUnlocked = unlockedTypes.has(a.type);
-            return (
-              <li
-                key={a.type}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${
-                  isUnlocked
-                    ? 'border border-accent-500/30 bg-accent-500/10'
-                    : 'bg-night-800 opacity-50'
-                }`}
-              >
-                <span className={`text-2xl ${isUnlocked ? '' : 'grayscale'}`}>
-                  {isUnlocked ? a.emoji : '🔒'}
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-white">
-                    {a.name}
-                  </p>
-                  <p className="truncate text-xs text-slate-400">
-                    {a.description}
-                  </p>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="mb-1 flex items-baseline justify-between">
+          <h2 className="font-display text-sm font-bold text-white">Logros</h2>
+          <span className="text-xs font-semibold text-accent-300">
+            {unlockedTypes.size}/{ACHIEVEMENTS.length}
+          </span>
+        </div>
+        <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-night-700">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-accent-600 to-accent-400 transition-[width] duration-700"
+            style={{
+              width: `${(unlockedTypes.size / ACHIEVEMENTS.length) * 100}%`,
+            }}
+          />
+        </div>
+        {CATEGORY_ORDER.map(([category, label]) => {
+          const items = ACHIEVEMENTS.filter((a) => a.category === category);
+          const got = items.filter((a) => unlockedTypes.has(a.type)).length;
+          return (
+            <div key={category} className="mb-4 last:mb-0">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-slate-500">
+                {label} · {got}/{items.length}
+              </p>
+              <ul className="grid grid-cols-1 gap-2">
+                {items.map((a) => {
+                  const isUnlocked = unlockedTypes.has(a.type);
+                  return (
+                    <li
+                      key={a.type}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 ${
+                        isUnlocked
+                          ? 'border border-accent-500/30 bg-accent-500/10'
+                          : 'bg-night-800 opacity-50'
+                      }`}
+                    >
+                      <span
+                        className={`text-2xl ${isUnlocked ? '' : 'grayscale'}`}
+                      >
+                        {isUnlocked ? a.emoji : '🔒'}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-white">
+                          {a.name}
+                        </p>
+                        <p className="truncate text-xs text-slate-400">
+                          {a.description}
+                        </p>
+                      </div>
+                      {isUnlocked && (
+                        <span className="ml-auto shrink-0 text-xs font-bold text-success">
+                          ✓
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
       </section>
     </div>
   );

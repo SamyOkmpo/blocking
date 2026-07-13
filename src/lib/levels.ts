@@ -15,6 +15,11 @@ export const LEVELS: Level[] = [
   { level: 8, name: 'Sabio de la Constancia', minXp: 3500 },
   { level: 9, name: 'Leyenda del Enfoque', minXp: 5000 },
   { level: 10, name: 'Maestro del Tiempo', minXp: 7000 },
+  { level: 11, name: 'Titán del Hábito', minXp: 9500 },
+  { level: 12, name: 'Señor de las Horas', minXp: 12500 },
+  { level: 13, name: 'Alquimista del Tiempo', minXp: 16000 },
+  { level: 14, name: 'Semidiós de la Disciplina', minXp: 20000 },
+  { level: 15, name: 'Deidad del Enfoque', minXp: 25000 },
 ];
 
 export function levelForXp(xp: number): Level {

@@ -37,14 +37,19 @@ export function Header() {
             />
           </div>
         </div>
-        <div
-          className={`flex shrink-0 items-center gap-1 rounded-xl px-2.5 py-1.5 font-display text-sm font-bold ${
-            stats.current_streak > 0
-              ? 'bg-warning/15 text-warning'
-              : 'bg-night-800 text-slate-500'
-          }`}
-        >
-          🔥 {stats.current_streak}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <div className="flex items-center gap-1 rounded-xl bg-accent-500/10 px-2 py-1.5 font-display text-xs font-bold text-accent-300">
+            💎 {stats.gems}
+          </div>
+          <div
+            className={`flex items-center gap-1 rounded-xl px-2 py-1.5 font-display text-xs font-bold ${
+              stats.current_streak > 0
+                ? 'bg-warning/15 text-warning'
+                : 'bg-night-800 text-slate-500'
+            }`}
+          >
+            🔥 {stats.current_streak}
+          </div>
         </div>
       </div>
     </header>

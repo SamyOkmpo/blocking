@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useApp } from '@/components/AppProvider';
+import { StreakPanel } from '@/components/StreakPanel';
 import {
   blockPhase,
   formatCountdown,
@@ -47,6 +48,9 @@ export default function HoyPage() {
           })}
         </p>
       </div>
+
+      {/* Racha, escudos y reparación */}
+      <StreakPanel />
 
       {/* Próximo bloque */}
       {upcoming && (

@@ -61,9 +61,19 @@ export function RewardOverlay() {
           ¡Bloque desbloqueado!
         </h2>
 
-        <p className="mt-3 inline-block rounded-full bg-accent-500/15 px-5 py-2 font-display text-xl font-bold text-accent-300">
-          +{reward.xpGained} XP
-        </p>
+        <div className="mt-3 flex items-center justify-center gap-2">
+          <p className="rounded-full bg-accent-500/15 px-5 py-2 font-display text-xl font-bold text-accent-300">
+            +{reward.xpGained} XP
+          </p>
+          <p className="rounded-full bg-accent-500/15 px-4 py-2 font-display text-lg font-bold text-accent-200">
+            +{reward.gemsGained} 💎
+          </p>
+        </div>
+        {reward.multiplier > 1 && (
+          <p className="mt-2 text-xs font-semibold text-warning">
+            🔥 Multiplicador de racha ×{reward.multiplier.toFixed(1)} aplicado
+          </p>
+        )}
 
         {reward.leveledUp && (
           <div className="mt-4 animate-slide-up rounded-2xl border border-warning/30 bg-warning/10 p-4">

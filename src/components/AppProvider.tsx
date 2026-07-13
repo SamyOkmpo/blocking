@@ -12,7 +12,10 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import {
   awardBlockCompletion,
+  buyShield,
   markBlockFailed,
+  reconcileStreak,
+  repairStreak,
   type RewardResult,
 } from '@/lib/gamification';
 import {
@@ -41,9 +44,13 @@ interface AppContextValue {
   activeBlock: TimeBlockWithTasks | null;
   locked: boolean;
   reward: RewardResult | null;
+  notice: string | null;
   loading: boolean;
   toggleTask: (blockId: string, taskId: string) => Promise<void>;
   dismissReward: () => void;
+  dismissNotice: () => void;
+  repairLostStreak: () => Promise<boolean>;
+  buyStreakShield: () => Promise<boolean>;
   refresh: () => Promise<void>;
 }
 
@@ -70,6 +77,7 @@ export function AppProvider({
     new Set()
   );
   const [reward, setReward] = useState<RewardResult | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   // Tick lento: solo para detectar cambios de fase (empezó/terminó un bloque)
   const [, setPhaseTick] = useState(0);
@@ -92,7 +100,17 @@ export function AppProvider({
         .eq('date', today),
     ]);
 
-    if (statsRes.data) setStats(statsRes.data as UserStats);
+    if (statsRes.data) {
+      // Mantenimiento de racha: días perdidos → escudos o racha perdida
+      const { stats: reconciled, outcome } = await reconcileStreak(
+        supabase,
+        statsRes.data as UserStats
+      );
+      setStats(reconciled);
+      if (outcome === 'shield_used') {
+        setNotice('🛡️ Un escudo protegió tu racha mientras no estabas.');
+      }
+    }
 
     const now = new Date();
     const blocks = ((blocksRes.data as TimeBlockWithTasks[]) ?? [])
@@ -217,7 +235,15 @@ export function AppProvider({
           if (!data) continue;
           s = data as BlockSession;
         }
-        await markBlockFailed(supabase, { userId, sessionId: s.id });
+        const outcome = await markBlockFailed(supabase, {
+          userId,
+          sessionId: s.id,
+        });
+        if (outcome === 'shield_used') {
+          setNotice(
+            `🛡️ "${b.title}" quedó incompleto, pero un escudo protegió tu racha.`
+          );
+        }
       }
       await refresh();
     })();
@@ -268,6 +294,9 @@ export function AppProvider({
       const otherBlocksDone = todayBlocks
         .filter((b) => b.id !== blockId && b.tasks.length > 0)
         .every((b) => sessions[b.id]?.status === 'completed');
+      const blocksCompletedToday =
+        Object.values(sessions).filter((s) => s.status === 'completed').length +
+        1;
 
       const result = await awardBlockCompletion(supabase, {
         userId,
@@ -275,12 +304,30 @@ export function AppProvider({
         tasksCompletedNow: block.tasks.length,
         remainingFraction,
         allDayBlocksCompleted: otherBlocksDone,
+        blocksCompletedToday,
       });
       await refresh();
       if (result) setReward(result);
     },
     [todayBlocks, sessions, completedTaskIds, supabase, userId, refresh]
   );
+
+  const repairLostStreak = useCallback(async () => {
+    if (!stats) return false;
+    const ok = await repairStreak(supabase, stats);
+    if (ok) {
+      setNotice(`❤️‍🔥 ¡Racha de ${stats.lost_streak} días recuperada!`);
+      await refresh();
+    }
+    return ok;
+  }, [stats, supabase, refresh]);
+
+  const buyStreakShield = useCallback(async () => {
+    if (!stats) return false;
+    const ok = await buyShield(supabase, stats);
+    if (ok) await refresh();
+    return ok;
+  }, [stats, supabase, refresh]);
 
   const value: AppContextValue = {
     userId,
@@ -291,9 +338,13 @@ export function AppProvider({
     activeBlock,
     locked,
     reward,
+    notice,
     loading,
     toggleTask,
     dismissReward: () => setReward(null),
+    dismissNotice: () => setNotice(null),
+    repairLostStreak,
+    buyStreakShield,
     refresh,
   };
 
