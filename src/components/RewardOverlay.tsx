@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { useApp } from './AppProvider';
 import { achievementDef } from '@/lib/achievements';
@@ -11,11 +11,19 @@ import { playUnlockSound } from '@/lib/sound';
  * Celebración al completar un bloque: confetti, sonido, XP ganado,
  * subida de nivel, racha y logros desbloqueados.
  */
+const CHEST_LABEL: Record<string, (amount: number) => string> = {
+  gems: (n) => `💎 ${n} gemas`,
+  xp: (n) => `⚡ ${n} XP extra`,
+  shield: () => '🛡️ ¡Un escudo de racha!',
+};
+
 export function RewardOverlay() {
   const { reward, dismissReward } = useApp();
+  const [chestOpen, setChestOpen] = useState(false);
 
   useEffect(() => {
     if (!reward) return;
+    setChestOpen(false);
     playUnlockSound();
     const colors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ffffff'];
     confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 }, colors });
@@ -56,10 +64,24 @@ export function RewardOverlay() {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-night-950/90 px-6 backdrop-blur-sm safe-top safe-bottom">
       <div className="w-full max-w-sm animate-pop-in rounded-3xl border border-accent-500/30 bg-night-850 p-8 text-center shadow-2xl shadow-accent-600/20">
-        <div className="text-6xl">🔓</div>
+        <div className="text-6xl">{reward.streakRevived ? '❤️‍🔥' : '🔓'}</div>
         <h2 className="mt-4 font-display text-2xl font-bold text-white">
-          ¡Bloque desbloqueado!
+          {reward.streakRevived
+            ? '¡Tu racha ha revivido!'
+            : '¡Bloque desbloqueado!'}
         </h2>
+        {reward.streakRevived && (
+          <p className="mt-1 text-sm text-slate-400">
+            Volviste por ella y la recuperaste completa. 🔥 {reward.streak}{' '}
+            días y contando.
+          </p>
+        )}
+
+        {reward.comeback && !reward.streakRevived && (
+          <p className="mt-2 rounded-xl bg-success/10 px-4 py-2 text-sm font-medium text-success">
+            🌱 Volviste, y eso es lo que cuenta. Bono de regreso aplicado.
+          </p>
+        )}
 
         <div className="mt-3 flex items-center justify-center gap-2">
           <p className="rounded-full bg-accent-500/15 px-5 py-2 font-display text-xl font-bold text-accent-300">
@@ -75,6 +97,50 @@ export function RewardOverlay() {
           </p>
         )}
 
+        {/* 🎁 Cofre diario: primer bloque del día */}
+        {reward.chest && (
+          <div className="mt-4">
+            {!chestOpen ? (
+              <button
+                onClick={() => {
+                  setChestOpen(true);
+                  if (navigator.vibrate) navigator.vibrate(40);
+                  confetti({
+                    particleCount: 40,
+                    spread: 60,
+                    origin: { y: 0.7 },
+                    colors: ['#fbbf24', '#f59e0b', '#c4b5fd'],
+                  });
+                }}
+                className="w-full animate-pulse-glow rounded-2xl border border-warning/40 bg-warning/10 p-4 transition-transform active:scale-95"
+              >
+                <span className="text-4xl">🎁</span>
+                <p className="mt-1 font-display text-sm font-bold text-warning">
+                  Cofre diario — tócalo para abrirlo
+                </p>
+                <p className="text-xs text-slate-400">
+                  Por tu primer bloque de hoy
+                </p>
+              </button>
+            ) : (
+              <div className="animate-pop-in rounded-2xl border border-warning/40 bg-warning/10 p-4">
+                <span className="text-4xl">✨</span>
+                <p className="mt-1 font-display text-lg font-bold text-warning">
+                  {CHEST_LABEL[reward.chest.kind](reward.chest.amount)}
+                </p>
+                {reward.chest.kind === 'gems' && reward.chest.amount >= 150 && (
+                  <p className="text-xs font-semibold text-white">
+                    🎰 ¡JACKPOT!
+                  </p>
+                )}
+                <p className="text-xs text-slate-400">
+                  Ya está sumado a tu recompensa
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {reward.leveledUp && (
           <div className="mt-4 animate-slide-up rounded-2xl border border-warning/30 bg-warning/10 p-4">
             <p className="text-sm font-semibold uppercase tracking-widest text-warning">
@@ -86,7 +152,7 @@ export function RewardOverlay() {
           </div>
         )}
 
-        {reward.dayCompleted && (
+        {reward.dayCompleted && !reward.streakRevived && (
           <div className="mt-4 animate-slide-up rounded-2xl border border-success/30 bg-success/10 p-4">
             <p className="font-display text-lg font-bold text-success">
               🔥 Racha: {reward.streak}{' '}

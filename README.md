@@ -18,8 +18,9 @@ PWA de auto-disciplina gamificada: programas **bloques de enfoque** con tareas, 
 
 1. Crea un proyecto gratis en [supabase.com](https://supabase.com).
 2. Abre **SQL Editor → New query** y ejecuta, en orden, el contenido de
-   [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql) y
-   [`supabase/migrations/002_rachas_y_gemas.sql`](supabase/migrations/002_rachas_y_gemas.sql).
+   [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql),
+   [`supabase/migrations/002_rachas_y_gemas.sql`](supabase/migrations/002_rachas_y_gemas.sql) y
+   [`supabase/migrations/003_cofres_y_camino.sql`](supabase/migrations/003_cofres_y_camino.sql).
 3. Para probar sin confirmación de correo: **Authentication → Sign In / Up → desactiva "Confirm email"**.
 4. Copia de **Project Settings → API**: la **Project URL** y la **anon key**.
 
@@ -66,13 +67,17 @@ Todas las tablas tienen **RLS**: cada usuario solo ve y modifica lo suyo.
 
 ### Gamificación
 
-- **XP**: +10 por tarea, +25 por bloque, +15 si fue *perfecto* (≥20% del tiempo restante), todo multiplicado por el **multiplicador de racha** (×1.0 → ×2.0 a los 30 días — romper la racha también duele en XP).
-- **Racha 🔥**: avanza al completar **todos** los bloques del día; un bloque fallido o un día sin actividad la rompe. Bonus diario de +5 XP × días de racha (máx. ×10).
-- **Gemas 💎**: +5 por bloque, +10 si es perfecto, +15 por día completo, +25 por logro, +50 por subir de nivel.
-- **Escudos 🛡️** (estilo *streak freeze* de Duolingo): cuestan 150 💎, máximo 2 equipados. Si fallas un bloque o pasas un día sin actividad, se consume uno solo y la racha sobrevive.
-- **Reparar racha ❤️‍🔥**: al perder una racha de 2+ días se abre una ventana de **48 horas** para revivirla pagando 💎 (25 × días perdidos, entre 50 y 300), con countdown en vivo en la pantalla "Hoy".
+La filosofía: **el trabajo duro son los bloques; la racha es fácil de mantener y difícil de perder para siempre.** Fallar nunca es el fin del camino.
+
+- **XP**: +10 por tarea, +25 por bloque, +15 si fue *perfecto* (≥20% del tiempo restante), todo multiplicado por el **multiplicador de racha** (×1.0 → ×2.0 a los 30 días).
+- **Racha 🔥 amable**: crece al completar **todos** los bloques del día. Un día parcial (al menos 1 bloque) la **mantiene viva** sin crecer; solo un día entero sin completar nada la pone en riesgo — y ahí entran los escudos y el rescate.
+- **Gemas 💎**: +5 por bloque, +10 si es perfecto, +15 por día completo, +25 por logro, +50 por subir de nivel, +10 por volver tras un tropiezo.
+- **Cofre diario 🎁** (refuerzo variable): el primer bloque de cada día abre un cofre con recompensa aleatoria — gemas (10–150, con jackpot del 2%), XP extra o incluso un escudo.
+- **Escudos 🛡️** (estilo *streak freeze*): todos empiezan con **1 gratis**; cuestan 150 💎, máximo 2. Cubren automáticamente los días vacíos.
+- **Revivir racha ❤️‍🔥**: al perderla se abre una ventana de **48 h** con dos caminos: **gratis**, completando todos los bloques de hoy (la racha vuelve y crece), o al instante pagando 💎 (25 × días, entre 50 y 300).
+- **Bono de regreso 🌱**: el primer bloque después de perder una racha da +20 XP y +10 💎 con el mensaje "volviste, eso es lo que cuenta".
 - **15 niveles** temáticos, de *Aprendiz del Enfoque* a *Deidad del Enfoque* (`src/lib/levels.ts`).
-- **32 logros** en 6 categorías, incluidos secretos como *Madrugador*, *Noctámbulo*, *Maratonista*, *Guardián de la llama* y *Fénix* (`src/lib/achievements.ts`).
+- **35 logros** en 6 categorías, incluidos *Madrugador*, *Noctámbulo*, *Maratonista*, *Guardián de la llama*, *Fénix*, *Buscador de tesoros* e *Inquebrantable* (`src/lib/achievements.ts`).
 
 ### Candado
 

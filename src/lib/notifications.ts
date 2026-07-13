@@ -83,8 +83,8 @@ export function scheduleLocalNotificationsForToday(
       timers.push(
         setTimeout(() => {
           show(
-            `⚠️ "${block.title}" termina en 10 minutos`,
-            'Si quedan tareas sin marcar, el bloque contará como fallido.',
+            `⚡ "${block.title}" termina en 10 minutos`,
+            'Sprint final: aún te da tiempo de completar lo que queda. 💪',
             `end-${block.id}`
           );
         }, endingDelay)

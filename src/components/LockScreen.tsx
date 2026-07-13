@@ -82,9 +82,8 @@ export function LockScreen() {
 
         {/* Aviso de urgencia */}
         {urgent && (
-          <p className="mb-4 animate-shake rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-center text-sm font-medium text-danger">
-            ⚠️ Menos de 5 minutos. Si no completas todo, el bloque cuenta como
-            fallido y pierdes la racha.
+          <p className="mb-4 animate-shake rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-center text-sm font-medium text-warning">
+            ⚡ Menos de 5 minutos — sprint final. Aún puedes lograrlo.
           </p>
         )}
 

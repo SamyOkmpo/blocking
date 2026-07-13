@@ -80,23 +80,34 @@ export function StreakPanel() {
         </button>
       )}
 
-      {/* ❤️‍🔥 Racha perdida recuperable — urgencia máxima */}
+      {/* ❤️‍🔥 Racha perdida recuperable — el camino no ha terminado */}
       {windowLeft > 0 && (
-        <div className="card animate-pop-in border-danger/50 bg-gradient-to-br from-night-850 to-danger/10">
+        <div className="card animate-pop-in border-warning/40 bg-gradient-to-br from-night-850 to-warning/10">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="font-display text-lg font-bold text-white">
-                💔 Perdiste tu racha de {stats.lost_streak}{' '}
-                {stats.lost_streak === 1 ? 'día' : 'días'}
+                🔥 Tu racha de {stats.lost_streak}{' '}
+                {stats.lost_streak === 1 ? 'día' : 'días'} te está esperando
               </p>
               <p className="mt-1 text-sm text-slate-400">
-                Aún puedes revivirla. Después, se apaga para siempre.
+                Tropezar no borra el camino recorrido. Tienes dos formas de
+                revivirla:
               </p>
             </div>
-            <span className="shrink-0 animate-pulse rounded-full bg-danger/20 px-3 py-1 font-display text-sm font-bold tabular-nums text-danger">
+            <span className="shrink-0 rounded-full bg-warning/15 px-3 py-1 font-display text-sm font-bold tabular-nums text-warning">
               ⏳ {formatLeft(windowLeft)}
             </span>
           </div>
+
+          <div className="mt-4 rounded-xl border border-success/30 bg-success/10 px-4 py-3">
+            <p className="text-sm font-semibold text-success">
+              💪 Gratis: completa todos los bloques de hoy
+            </p>
+            <p className="mt-0.5 text-xs text-slate-400">
+              Tu racha vuelve sola, y con el día de hoy sumado.
+            </p>
+          </div>
+
           <button
             onClick={async () => {
               setBusy(true);
@@ -104,15 +115,16 @@ export function StreakPanel() {
               setBusy(false);
             }}
             disabled={!canRepair || busy}
-            className="btn-primary mt-4 w-full disabled:opacity-40"
+            className="btn-ghost mt-2 w-full text-sm disabled:opacity-40"
           >
             {busy
               ? 'Reviviendo…'
-              : `❤️‍🔥 Revivir racha por 💎 ${cost}`}
+              : `⚡ O revívela ya mismo por 💎 ${cost}`}
           </button>
           {stats.gems < cost && (
             <p className="mt-2 text-center text-xs text-slate-500">
-              Te faltan 💎 {cost - stats.gems} — gana gemas completando bloques
+              (te faltan 💎 {cost - stats.gems} para la vía rápida — la gratis
+              siempre está disponible)
             </p>
           )}
         </div>
@@ -157,23 +169,35 @@ export function StreakPanel() {
         <p className="mt-3 text-sm">
           {daySecured ? (
             <span className="font-medium text-success">
-              ✓ Día asegurado. La racha sigue viva.
+              ✓ Día completo. La racha creció. 🎉
+            </span>
+          ) : anyFailedToday && stats.current_streak > 0 ? (
+            <span className="font-medium text-warning">
+              💛 Hubo un tropiezo, pero la llama sigue viva. Hoy no crece —
+              mañana sí.
             </span>
           ) : anyFailedToday && stats.current_streak === 0 && windowLeft === 0 ? (
             <span className="text-slate-400">
-              Hoy hubo un tropiezo. Mañana empieza una racha nueva. 🌱
+              🌱 Cada bloque completado hoy es el primer paso de una racha
+              nueva.
             </span>
           ) : pendingBlocks > 0 ? (
             <span className="font-medium text-warning">
               ⏳ {pendingBlocks === 1
-                ? 'Te falta 1 bloque para asegurar el día'
-                : `Te faltan ${pendingBlocks} bloques para asegurar el día`}
+                ? 'Un bloque más y el día queda completo'
+                : `${pendingBlocks} bloques más y el día queda completo`}
             </span>
           ) : (
             <span className="text-slate-500">
               Programa bloques para hacer crecer tu racha.
             </span>
           )}
+        </p>
+
+        <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
+          La llama solo se apaga si pasa un día entero sin completar ningún
+          bloque — y aun así, tienes 48 h para revivirla. Los escudos 🛡️ cubren
+          días vacíos automáticamente.
         </p>
 
         {/* Comprar escudo */}

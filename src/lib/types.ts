@@ -62,6 +62,9 @@ export interface UserStats {
   early_blocks: number;
   night_blocks: number;
   max_blocks_in_day: number;
+  last_active_date: string | null;
+  chests_opened: number;
+  comebacks: number;
   updated_at: string;
 }
 
