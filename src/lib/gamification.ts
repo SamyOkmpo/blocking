@@ -20,9 +20,11 @@ export const GEMS_PER_ACHIEVEMENT = 25;
 export const GEMS_PER_LEVEL_UP = 50;
 export const GEMS_COMEBACK = 10;
 
-// ---- 🛡️ Escudos y ❤️‍🔥 reparación ----
+// ---- 🛒 Tienda ----
 export const SHIELD_COST = 150;
 export const MAX_SHIELDS = 2;
+export const CHEST_COST = 75;
+export const XP_BOOST_COST = 100;
 /** Horas disponibles para revivir una racha perdida. */
 export const REPAIR_WINDOW_HOURS = 48;
 
@@ -77,6 +79,7 @@ export interface RewardResult {
   chest: ChestReward | null; // 🎁 primer bloque del día
   comeback: boolean; // 🌱 volvió después de perder la racha
   streakRevived: boolean; // ❤️‍🔥 rescate gratis: día completo dentro de la ventana
+  boosted: boolean; // ⚡ impulso ×2 de la tienda activo
 }
 
 /** Logros cuyo requisito ya se cumple pero aún no están desbloqueados. */
@@ -180,6 +183,10 @@ export async function awardBlockCompletion(
     gems += GEMS_DAY_COMPLETE;
   }
 
+  // ⚡ Impulso de la tienda: duplica todo el XP del día
+  const boosted = stats.xp_boost_date === today;
+  if (boosted) xp *= 2;
+
   const hour = new Date().getHours();
   const totalXp = stats.total_xp + xp;
   const prevLevel = stats.level;
@@ -251,6 +258,7 @@ export async function awardBlockCompletion(
     chest,
     comeback,
     streakRevived,
+    boosted,
   };
 }
 
@@ -405,6 +413,73 @@ export async function buyShield(
     .update({
       gems: stats.gems - SHIELD_COST,
       streak_shields: stats.streak_shields + 1,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', stats.user_id);
+  return !error;
+}
+
+/** 🎁 Compra un cofre misterioso: se abre al instante. */
+export async function buyMysteryChest(
+  supabase: SupabaseClient,
+  stats: UserStats
+): Promise<ChestReward | null> {
+  if (stats.gems < CHEST_COST) return null;
+
+  const chest = rollDailyChest(stats.streak_shields);
+  let gems = stats.gems - CHEST_COST;
+  let totalXp = stats.total_xp;
+  let shields = stats.streak_shields;
+  if (chest.kind === 'gems') gems += chest.amount;
+  if (chest.kind === 'xp') totalXp += chest.amount;
+  if (chest.kind === 'shield') shields += chest.amount;
+
+  const newLevel = levelForXp(totalXp).level;
+  if (newLevel > stats.level) {
+    gems += GEMS_PER_LEVEL_UP * (newLevel - stats.level);
+  }
+
+  const updated: Partial<UserStats> = {
+    gems,
+    total_xp: totalXp,
+    level: newLevel,
+    streak_shields: shields,
+    chests_opened: stats.chests_opened + 1,
+    updated_at: new Date().toISOString(),
+  };
+
+  const fresh = await findFreshAchievements(supabase, {
+    ...stats,
+    ...updated,
+  } as UserStats);
+  if (fresh.length > 0) {
+    updated.gems = gems + fresh.length * GEMS_PER_ACHIEVEMENT;
+    await supabase.from('achievements').insert(
+      fresh.map((type) => ({ user_id: stats.user_id, achievement_type: type }))
+    );
+  }
+
+  const { error } = await supabase
+    .from('user_stats')
+    .update(updated)
+    .eq('user_id', stats.user_id);
+  return error ? null : chest;
+}
+
+/** ⚡ Compra el impulso ×2 de XP para el resto del día (uno por día). */
+export async function buyXpBoost(
+  supabase: SupabaseClient,
+  stats: UserStats
+): Promise<boolean> {
+  const today = localDateStr();
+  if (stats.gems < XP_BOOST_COST || stats.xp_boost_date === today) {
+    return false;
+  }
+  const { error } = await supabase
+    .from('user_stats')
+    .update({
+      gems: stats.gems - XP_BOOST_COST,
+      xp_boost_date: today,
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', stats.user_id);

@@ -72,6 +72,7 @@ La filosofía: **el trabajo duro son los bloques; la racha es fácil de mantener
 - **Racha 🔥 amable**: crece al completar **todos** los bloques del día. Un día parcial (al menos 1 bloque) la **mantiene viva** sin crecer; solo un día entero sin completar nada la pone en riesgo — y ahí entran los escudos y el rescate.
 - **Gemas 💎**: +5 por bloque, +10 si es perfecto, +15 por día completo, +25 por logro, +50 por subir de nivel, +10 por volver tras un tropiezo.
 - **Cofre diario 🎁** (refuerzo variable): el primer bloque de cada día abre un cofre con recompensa aleatoria — gemas (10–150, con jackpot del 2%), XP extra o incluso un escudo.
+- **Tienda 🛒** (se abre tocando el chip 💎 del header o desde el panel de racha, sin ocupar un tab): escudo (150 💎), **cofre misterioso** (75 💎, apertura instantánea con recompensa aleatoria) e **impulso ×2 de XP** para el resto del día (100 💎, uno por día). Incluye la guía de cómo ganar gemas.
 - **Escudos 🛡️** (estilo *streak freeze*): todos empiezan con **1 gratis**; cuestan 150 💎, máximo 2. Cubren automáticamente los días vacíos.
 - **Revivir racha ❤️‍🔥**: al perderla se abre una ventana de **48 h** con dos caminos: **gratis**, completando todos los bloques de hoy (la racha vuelve y crece), o al instante pagando 💎 (25 × días, entre 50 y 300).
 - **Bono de regreso 🌱**: el primer bloque después de perder una racha da +20 XP y +10 💎 con el mensaje "volviste, eso es lo que cuenta".

@@ -96,6 +96,11 @@ export function RewardOverlay() {
             🔥 Multiplicador de racha ×{reward.multiplier.toFixed(1)} aplicado
           </p>
         )}
+        {reward.boosted && (
+          <p className="mt-1 text-xs font-semibold text-accent-300">
+            ⚡ Impulso de la tienda: XP duplicado
+          </p>
+        )}
 
         {/* 🎁 Cofre diario: primer bloque del día */}
         {reward.chest && (

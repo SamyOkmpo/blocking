@@ -6,7 +6,6 @@ import {
   MAX_SHIELDS,
   repairCost,
   repairWindowLeftMs,
-  SHIELD_COST,
   streakMultiplier,
 } from '@/lib/gamification';
 import { blockPhase, localDateStr } from '@/lib/time';
@@ -32,7 +31,7 @@ export function StreakPanel() {
     notice,
     dismissNotice,
     repairLostStreak,
-    buyStreakShield,
+    openShop,
   } = useApp();
   const [, setTick] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -200,26 +199,13 @@ export function StreakPanel() {
           días vacíos automáticamente.
         </p>
 
-        {/* Comprar escudo */}
-        {stats.streak_shields < MAX_SHIELDS && (
-          <button
-            onClick={async () => {
-              setBusy(true);
-              await buyStreakShield();
-              setBusy(false);
-            }}
-            disabled={stats.gems < SHIELD_COST || busy}
-            className="btn-ghost mt-3 w-full text-sm disabled:opacity-40"
-          >
-            🛡️ Comprar escudo — 💎 {SHIELD_COST}
-            {stats.gems < SHIELD_COST && (
-              <span className="text-slate-500">
-                {' '}
-                (tienes 💎 {stats.gems})
-              </span>
-            )}
-          </button>
-        )}
+        {/* Tienda */}
+        <button
+          onClick={openShop}
+          className="btn-ghost mt-3 w-full text-sm"
+        >
+          🛒 Abrir tienda — escudos, cofres e impulsos con tus 💎 {stats.gems}
+        </button>
       </div>
     </div>
   );
