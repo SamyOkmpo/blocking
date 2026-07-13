@@ -235,13 +235,10 @@ export function AppProvider({
           if (!data) continue;
           s = data as BlockSession;
         }
-        const outcome = await markBlockFailed(supabase, {
-          userId,
-          sessionId: s.id,
-        });
-        if (outcome === 'shield_used') {
+        const marked = await markBlockFailed(supabase, { sessionId: s.id });
+        if (marked) {
           setNotice(
-            `🛡️ "${b.title}" quedó incompleto, pero un escudo protegió tu racha.`
+            `💛 "${b.title}" quedó incompleto — no pasa nada. Tu llama sigue viva: con completar un bloque hoy, el camino continúa.`
           );
         }
       }

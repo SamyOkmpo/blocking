@@ -121,7 +121,7 @@ export default function HoyPage() {
               ),
               failed: (
                 <span className="rounded-full bg-danger/15 px-2.5 py-1 text-[11px] font-bold text-danger">
-                  ✗ Fallido
+                  Incompleto
                 </span>
               ),
               active: (
