@@ -65,6 +65,7 @@ export interface UserStats {
   last_active_date: string | null;
   chests_opened: number;
   comebacks: number;
+  xp_boost_date: string | null;
   updated_at: string;
 }
 

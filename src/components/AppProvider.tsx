@@ -12,10 +12,13 @@ import {
 import { createClient } from '@/lib/supabase/client';
 import {
   awardBlockCompletion,
+  buyMysteryChest,
   buyShield,
+  buyXpBoost,
   markBlockFailed,
   reconcileStreak,
   repairStreak,
+  type ChestReward,
   type RewardResult,
 } from '@/lib/gamification';
 import {
@@ -46,11 +49,16 @@ interface AppContextValue {
   reward: RewardResult | null;
   notice: string | null;
   loading: boolean;
+  shopOpen: boolean;
+  openShop: () => void;
+  closeShop: () => void;
   toggleTask: (blockId: string, taskId: string) => Promise<void>;
   dismissReward: () => void;
   dismissNotice: () => void;
   repairLostStreak: () => Promise<boolean>;
   buyStreakShield: () => Promise<boolean>;
+  buyChest: () => Promise<ChestReward | null>;
+  buyBoost: () => Promise<boolean>;
   refresh: () => Promise<void>;
 }
 
@@ -79,6 +87,7 @@ export function AppProvider({
   const [reward, setReward] = useState<RewardResult | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [shopOpen, setShopOpen] = useState(false);
   // Tick lento: solo para detectar cambios de fase (empezó/terminó un bloque)
   const [, setPhaseTick] = useState(0);
   const busyRef = useRef(false);
@@ -326,6 +335,20 @@ export function AppProvider({
     return ok;
   }, [stats, supabase, refresh]);
 
+  const buyChest = useCallback(async () => {
+    if (!stats) return null;
+    const chest = await buyMysteryChest(supabase, stats);
+    if (chest) await refresh();
+    return chest;
+  }, [stats, supabase, refresh]);
+
+  const buyBoost = useCallback(async () => {
+    if (!stats) return false;
+    const ok = await buyXpBoost(supabase, stats);
+    if (ok) await refresh();
+    return ok;
+  }, [stats, supabase, refresh]);
+
   const value: AppContextValue = {
     userId,
     stats,
@@ -337,11 +360,16 @@ export function AppProvider({
     reward,
     notice,
     loading,
+    shopOpen,
+    openShop: () => setShopOpen(true),
+    closeShop: () => setShopOpen(false),
     toggleTask,
     dismissReward: () => setReward(null),
     dismissNotice: () => setNotice(null),
     repairLostStreak,
     buyStreakShield,
+    buyChest,
+    buyBoost,
     refresh,
   };
 

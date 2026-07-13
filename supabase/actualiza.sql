@@ -23,7 +23,9 @@ alter table public.user_stats
   -- 🎁 cofres diarios abiertos (primer bloque de cada día)
   add column if not exists chests_opened int not null default 0,
   -- 🌱 regresos: primer bloque completado después de perder una racha
-  add column if not exists comebacks int not null default 0;
+  add column if not exists comebacks int not null default 0,
+  -- ⚡ día con impulso ×2 de XP activo (comprado en la tienda)
+  add column if not exists xp_boost_date date;
 
 -- 🛡️ Escudo de bienvenida: todos empiezan con uno gratis
 alter table public.user_stats alter column streak_shields set default 1;
