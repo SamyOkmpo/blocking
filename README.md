@@ -17,10 +17,9 @@ PWA de auto-disciplina gamificada: programas **bloques de enfoque** con tareas, 
 ### 1. Supabase
 
 1. Crea un proyecto gratis en [supabase.com](https://supabase.com).
-2. Abre **SQL Editor → New query** y ejecuta, en orden, el contenido de
-   [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql),
-   [`supabase/migrations/002_rachas_y_gemas.sql`](supabase/migrations/002_rachas_y_gemas.sql) y
-   [`supabase/migrations/003_cofres_y_camino.sql`](supabase/migrations/003_cofres_y_camino.sql).
+2. Abre **SQL Editor → New query** y ejecuta:
+   - Base nueva: [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql) y luego [`supabase/actualiza.sql`](supabase/actualiza.sql).
+   - Base que ya tiene 001: solo [`supabase/actualiza.sql`](supabase/actualiza.sql) (combina las migraciones 002 y 003; es idempotente, puedes ejecutarlo las veces que quieras).
 3. Para probar sin confirmación de correo: **Authentication → Sign In / Up → desactiva "Confirm email"**.
 4. Copia de **Project Settings → API**: la **Project URL** y la **anon key**.
 
