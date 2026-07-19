@@ -290,14 +290,6 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     check: (s) => s.streaks_repaired >= 1,
   },
   {
-    type: 'cofres_10',
-    name: 'Buscador de tesoros',
-    description: 'Abre 10 cofres diarios',
-    emoji: '🎁',
-    category: 'especiales',
-    check: (s) => s.chests_opened >= 10,
-  },
-  {
     type: 'regreso_1',
     name: 'El regreso',
     description: 'Vuelve a completar un bloque después de perder una racha',

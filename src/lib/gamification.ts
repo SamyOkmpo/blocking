@@ -12,29 +12,17 @@ export const XP_COMEBACK_BONUS = 20;
 /** Fracción de tiempo restante mínima para que un bloque cuente como "perfecto". */
 export const PERFECT_THRESHOLD = 0.2;
 
-// ---- 💎 Gemas ----
-export const GEMS_PER_BLOCK = 5;
-export const GEMS_PERFECT = 10;
-export const GEMS_DAY_COMPLETE = 15;
-export const GEMS_PER_ACHIEVEMENT = 25;
-export const GEMS_PER_LEVEL_UP = 50;
-export const GEMS_COMEBACK = 10;
-
-// ---- 🛒 Tienda ----
-export const SHIELD_COST = 150;
-export const MAX_SHIELDS = 2;
-export const CHEST_COST = 75;
-export const XP_BOOST_COST = 100;
-/** Horas disponibles para revivir una racha perdida. */
+// ---- 🛡️ Protectores de racha ----
+/** Días de racha seguidos que ganan un protector nuevo. */
+export const SHIELD_STREAK_INTERVAL_DAYS = 7;
+/** A partir de esta racha, el máximo acumulable de protectores sube a 2. */
+export const LONG_STREAK_THRESHOLD = 30;
+/** Horas disponibles para revivir una racha perdida completando el día. */
 export const REPAIR_WINDOW_HOURS = 48;
 
-export function repairCost(lostStreak: number): number {
-  return Math.min(300, Math.max(50, lostStreak * 25));
-}
-
-/** Multiplicador de XP por racha: x1.0 → x2.0 a los 30 días. */
-export function streakMultiplier(streak: number): number {
-  return 1 + Math.min(streak, 30) / 30;
+/** Máximo de protectores que se pueden acumular según la racha actual. */
+export function maxStreakShields(streak: number): number {
+  return streak > LONG_STREAK_THRESHOLD ? 2 : 1;
 }
 
 export function streakBonusXp(streak: number): number {
@@ -49,37 +37,16 @@ export function repairWindowLeftMs(stats: UserStats, now = new Date()): number {
   return Math.max(0, deadline - now.getTime());
 }
 
-// ---- 🎁 Cofre diario (refuerzo variable) ----
-export interface ChestReward {
-  kind: 'gems' | 'xp' | 'shield';
-  amount: number;
-}
-
-export function rollDailyChest(currentShields: number): ChestReward {
-  const r = Math.random() * 100;
-  if (r < 2) return { kind: 'gems', amount: 150 }; // jackpot
-  if (r < 10) {
-    if (currentShields < MAX_SHIELDS) return { kind: 'shield', amount: 1 };
-    return { kind: 'gems', amount: 60 };
-  }
-  if (r < 30) return { kind: 'gems', amount: 40 + Math.floor(Math.random() * 21) };
-  if (r < 60) return { kind: 'xp', amount: 30 + Math.floor(Math.random() * 31) };
-  return { kind: 'gems', amount: 10 + Math.floor(Math.random() * 16) };
-}
-
 export interface RewardResult {
   xpGained: number;
-  gemsGained: number;
-  multiplier: number;
   leveledUp: boolean;
   newLevel: number;
   newAchievements: string[]; // achievement_type[]
   streak: number;
   dayCompleted: boolean;
-  chest: ChestReward | null; // 🎁 primer bloque del día
   comeback: boolean; // 🌱 volvió después de perder la racha
   streakRevived: boolean; // ❤️‍🔥 rescate gratis: día completo dentro de la ventana
-  boosted: boolean; // ⚡ impulso ×2 de la tienda activo
+  shieldEarned: boolean; // 🛡️ nueva semana de racha completada
 }
 
 /** Logros cuyo requisito ya se cumple pero aún no están desbloqueados. */
@@ -98,10 +65,9 @@ async function findFreshAchievements(
 }
 
 /**
- * Registra el bloque como completado: XP (con multiplicador de racha), gemas,
- * cofre diario si es el primer bloque del día, bono de regreso, racha si el
- * día quedó completo (incluido el rescate gratis de una racha perdida),
- * subida de nivel y logros.
+ * Registra el bloque como completado: XP, bono de regreso, racha si el día
+ * quedó completo (incluido el rescate gratis de una racha perdida), un
+ * protector nuevo cada semana de racha, subida de nivel y logros.
  */
 export async function awardBlockCompletion(
   supabase: SupabaseClient,
@@ -124,15 +90,11 @@ export async function awardBlockCompletion(
   const today = localDateStr();
   const isFirstBlockToday = opts.blocksCompletedToday === 1;
   const isPerfect = opts.remainingFraction >= PERFECT_THRESHOLD;
-  const multiplier = streakMultiplier(stats.current_streak);
 
-  let xp = Math.round(
-    (opts.tasksCompletedNow * XP_PER_TASK +
-      XP_BLOCK_BONUS +
-      (isPerfect ? XP_PERFECT_BONUS : 0)) *
-      multiplier
-  );
-  let gems = GEMS_PER_BLOCK + (isPerfect ? GEMS_PERFECT : 0);
+  let xp =
+    opts.tasksCompletedNow * XP_PER_TASK +
+    XP_BLOCK_BONUS +
+    (isPerfect ? XP_PERFECT_BONUS : 0);
   let shields = stats.streak_shields;
 
   // 🌱 Bono de regreso: primer bloque tras haber perdido la racha
@@ -140,19 +102,7 @@ export async function awardBlockCompletion(
     isFirstBlockToday &&
     stats.current_streak === 0 &&
     stats.total_blocks_completed > 0;
-  if (comeback) {
-    xp += XP_COMEBACK_BONUS;
-    gems += GEMS_COMEBACK;
-  }
-
-  // 🎁 Cofre diario: primer bloque del día
-  let chest: ChestReward | null = null;
-  if (isFirstBlockToday) {
-    chest = rollDailyChest(shields);
-    if (chest.kind === 'gems') gems += chest.amount;
-    if (chest.kind === 'xp') xp += chest.amount;
-    if (chest.kind === 'shield') shields += chest.amount;
-  }
+  if (comeback) xp += XP_COMEBACK_BONUS;
 
   // Racha: crece cuando TODOS los bloques del día quedan completados.
   // Un día parcial la mantiene viva (reconcileStreak solo la rompe si un
@@ -164,6 +114,7 @@ export async function awardBlockCompletion(
   let streaksRepaired = stats.streaks_repaired;
   let dayCompleted = false;
   let streakRevived = false;
+  let shieldEarned = false;
 
   if (opts.allDayBlocksCompleted && lastStreakDate !== today) {
     if (lostStreak > 0 && repairWindowLeftMs(stats) > 0) {
@@ -180,20 +131,23 @@ export async function awardBlockCompletion(
     lastStreakDate = today;
     dayCompleted = true;
     xp += streakBonusXp(streak);
-    gems += GEMS_DAY_COMPLETE;
+
+    // 🛡️ Cada semana completa de racha da un protector (tope según la racha)
+    if (streak % SHIELD_STREAK_INTERVAL_DAYS === 0) {
+      const cap = maxStreakShields(streak);
+      if (shields < cap) {
+        shields += 1;
+        shieldEarned = true;
+      }
+    }
   }
 
-  // ⚡ Impulso de la tienda: duplica todo el XP del día
-  const boosted = stats.xp_boost_date === today;
-  if (boosted) xp *= 2;
-
-  const hour = new Date().getHours();
   const totalXp = stats.total_xp + xp;
   const prevLevel = stats.level;
   const newLevel = levelForXp(totalXp).level;
   const leveledUp = newLevel > prevLevel;
-  if (leveledUp) gems += GEMS_PER_LEVEL_UP * (newLevel - prevLevel);
 
+  const hour = new Date().getHours();
   const updated: Partial<UserStats> = {
     total_xp: totalXp,
     level: newLevel,
@@ -208,7 +162,6 @@ export async function awardBlockCompletion(
     lost_streak_at: lostStreakAt,
     streaks_repaired: streaksRepaired,
     streak_shields: shields,
-    chests_opened: stats.chests_opened + (chest ? 1 : 0),
     comebacks: stats.comebacks + (comeback ? 1 : 0),
     early_blocks: stats.early_blocks + (hour < 8 ? 1 : 0),
     night_blocks: stats.night_blocks + (hour >= 21 ? 1 : 0),
@@ -219,13 +172,11 @@ export async function awardBlockCompletion(
     updated_at: new Date().toISOString(),
   };
 
-  // Logros nuevos según las stats ya actualizadas (dan gemas extra)
+  // Logros nuevos según las stats ya actualizadas
   const newAchievements = await findFreshAchievements(supabase, {
     ...stats,
     ...updated,
   } as UserStats);
-  gems += newAchievements.length * GEMS_PER_ACHIEVEMENT;
-  updated.gems = stats.gems + gems;
 
   await supabase.from('user_stats').update(updated).eq('user_id', opts.userId);
   await supabase
@@ -248,17 +199,14 @@ export async function awardBlockCompletion(
 
   return {
     xpGained: xp,
-    gemsGained: gems,
-    multiplier,
     leveledUp,
     newLevel,
     newAchievements,
     streak,
     dayCompleted,
-    chest,
     comeback,
     streakRevived,
-    boosted,
+    shieldEarned,
   };
 }
 
@@ -281,15 +229,59 @@ export async function markBlockFailed(
   return Boolean(data && data.length > 0);
 }
 
+/**
+ * Reinicia por completo el progreso del usuario: racha, XP, nivel, logros
+ * e historial de sesiones/tareas completadas. Los bloques y tareas
+ * (las plantillas) NO se tocan — solo el rastro de gamificación.
+ */
+export async function resetStats(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<boolean> {
+  const [{ error: sessionsError }, { error: achievementsError }] =
+    await Promise.all([
+      supabase.from('block_sessions').delete().eq('user_id', userId),
+      supabase.from('achievements').delete().eq('user_id', userId),
+    ]);
+  if (sessionsError || achievementsError) return false;
+
+  const { error: statsError } = await supabase
+    .from('user_stats')
+    .update({
+      current_streak: 0,
+      longest_streak: 0,
+      total_xp: 0,
+      level: 1,
+      total_tasks_completed: 0,
+      total_blocks_completed: 0,
+      perfect_blocks: 0,
+      last_streak_date: null,
+      streak_shields: 1,
+      shields_used: 0,
+      streaks_repaired: 0,
+      lost_streak: 0,
+      lost_streak_at: null,
+      early_blocks: 0,
+      night_blocks: 0,
+      max_blocks_in_day: 0,
+      last_active_date: null,
+      comebacks: 0,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId);
+
+  return !statsError;
+}
+
 export type ReconcileOutcome = 'shield_used' | 'streak_lost' | 'none';
 
 /**
  * Mantenimiento al abrir la app:
  * - La llama sigue viva mientras cada día tenga al menos un bloque
- *   completado. Si pasaron días enteros sin actividad, los escudos 🛡️ los
- *   cubren (uno por día); si no alcanzan, la racha queda perdida pero
- *   recuperable: 48 h para revivirla con gemas o gratis completando
- *   todos los bloques de hoy.
+ *   completado. Si pasaron días enteros sin actividad, los protectores 🛡️
+ *   los cubren (uno por día); si no alcanzan, la racha queda perdida pero
+ *   recuperable: 48 h para revivirla gratis completando todos los bloques
+ *   de hoy.
  * - Limpia ventanas de rescate expiradas.
  */
 export async function reconcileStreak(
@@ -346,142 +338,4 @@ export async function reconcileStreak(
     .update(updated)
     .eq('user_id', stats.user_id);
   return { stats: { ...stats, ...updated } as UserStats, outcome };
-}
-
-/** ❤️‍🔥 Revive la racha perdida al instante pagando gemas (dentro de la ventana). */
-export async function repairStreak(
-  supabase: SupabaseClient,
-  stats: UserStats
-): Promise<boolean> {
-  const cost = repairCost(stats.lost_streak);
-  if (
-    stats.lost_streak <= 0 ||
-    stats.gems < cost ||
-    repairWindowLeftMs(stats) === 0
-  ) {
-    return false;
-  }
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const { error } = await supabase
-    .from('user_stats')
-    .update({
-      gems: stats.gems - cost,
-      current_streak: stats.lost_streak,
-      longest_streak: Math.max(stats.longest_streak, stats.lost_streak),
-      // La cadena continúa si completas los bloques de hoy
-      last_streak_date: localDateStr(yesterday),
-      last_active_date: localDateStr(yesterday),
-      lost_streak: 0,
-      lost_streak_at: null,
-      streaks_repaired: stats.streaks_repaired + 1,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('user_id', stats.user_id);
-  if (error) return false;
-
-  // El logro "Fénix" puede desbloquearse aquí mismo
-  const fresh = await findFreshAchievements(supabase, {
-    ...stats,
-    streaks_repaired: stats.streaks_repaired + 1,
-    current_streak: stats.lost_streak,
-  } as UserStats);
-  if (fresh.length > 0) {
-    await supabase.from('achievements').insert(
-      fresh.map((type) => ({ user_id: stats.user_id, achievement_type: type }))
-    );
-    await supabase
-      .from('user_stats')
-      .update({
-        gems: stats.gems - cost + fresh.length * GEMS_PER_ACHIEVEMENT,
-      })
-      .eq('user_id', stats.user_id);
-  }
-  return true;
-}
-
-/** 🛡️ Compra un escudo de racha con gemas. */
-export async function buyShield(
-  supabase: SupabaseClient,
-  stats: UserStats
-): Promise<boolean> {
-  if (stats.gems < SHIELD_COST || stats.streak_shields >= MAX_SHIELDS) {
-    return false;
-  }
-  const { error } = await supabase
-    .from('user_stats')
-    .update({
-      gems: stats.gems - SHIELD_COST,
-      streak_shields: stats.streak_shields + 1,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('user_id', stats.user_id);
-  return !error;
-}
-
-/** 🎁 Compra un cofre misterioso: se abre al instante. */
-export async function buyMysteryChest(
-  supabase: SupabaseClient,
-  stats: UserStats
-): Promise<ChestReward | null> {
-  if (stats.gems < CHEST_COST) return null;
-
-  const chest = rollDailyChest(stats.streak_shields);
-  let gems = stats.gems - CHEST_COST;
-  let totalXp = stats.total_xp;
-  let shields = stats.streak_shields;
-  if (chest.kind === 'gems') gems += chest.amount;
-  if (chest.kind === 'xp') totalXp += chest.amount;
-  if (chest.kind === 'shield') shields += chest.amount;
-
-  const newLevel = levelForXp(totalXp).level;
-  if (newLevel > stats.level) {
-    gems += GEMS_PER_LEVEL_UP * (newLevel - stats.level);
-  }
-
-  const updated: Partial<UserStats> = {
-    gems,
-    total_xp: totalXp,
-    level: newLevel,
-    streak_shields: shields,
-    chests_opened: stats.chests_opened + 1,
-    updated_at: new Date().toISOString(),
-  };
-
-  const fresh = await findFreshAchievements(supabase, {
-    ...stats,
-    ...updated,
-  } as UserStats);
-  if (fresh.length > 0) {
-    updated.gems = gems + fresh.length * GEMS_PER_ACHIEVEMENT;
-    await supabase.from('achievements').insert(
-      fresh.map((type) => ({ user_id: stats.user_id, achievement_type: type }))
-    );
-  }
-
-  const { error } = await supabase
-    .from('user_stats')
-    .update(updated)
-    .eq('user_id', stats.user_id);
-  return error ? null : chest;
-}
-
-/** ⚡ Compra el impulso ×2 de XP para el resto del día (uno por día). */
-export async function buyXpBoost(
-  supabase: SupabaseClient,
-  stats: UserStats
-): Promise<boolean> {
-  const today = localDateStr();
-  if (stats.gems < XP_BOOST_COST || stats.xp_boost_date === today) {
-    return false;
-  }
-  const { error } = await supabase
-    .from('user_stats')
-    .update({
-      gems: stats.gems - XP_BOOST_COST,
-      xp_boost_date: today,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('user_id', stats.user_id);
-  return !error;
 }

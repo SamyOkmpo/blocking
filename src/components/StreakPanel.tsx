@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useApp } from './AppProvider';
 import {
-  MAX_SHIELDS,
-  repairCost,
+  LONG_STREAK_THRESHOLD,
+  maxStreakShields,
   repairWindowLeftMs,
-  streakMultiplier,
+  SHIELD_STREAK_INTERVAL_DAYS,
 } from '@/lib/gamification';
 import { blockPhase, localDateStr } from '@/lib/time';
 
@@ -19,22 +19,12 @@ function formatLeft(ms: number): string {
 }
 
 /**
- * Panel de racha en "Hoy": multiplicador de XP, escudos 🛡️, banner urgente
- * de reparación ❤️‍🔥 cuando hay una racha perdida recuperable, y cuántos
- * bloques faltan para asegurar el día.
+ * Panel de racha en "Hoy": protectores 🛡️ y aviso de rescate gratis cuando
+ * hay una racha perdida recuperable dentro de la ventana de 48 h.
  */
 export function StreakPanel() {
-  const {
-    stats,
-    todayBlocks,
-    sessions,
-    notice,
-    dismissNotice,
-    repairLostStreak,
-    openShop,
-  } = useApp();
+  const { stats, todayBlocks, sessions, notice, dismissNotice } = useApp();
   const [, setTick] = useState(0);
-  const [busy, setBusy] = useState(false);
 
   // Tick por segundo solo mientras la ventana de reparación está activa
   const windowLeft = stats ? repairWindowLeftMs(stats) : 0;
@@ -46,10 +36,7 @@ export function StreakPanel() {
 
   if (!stats) return null;
 
-  const multiplier = streakMultiplier(stats.current_streak);
-  const cost = repairCost(stats.lost_streak);
-  const canRepair = windowLeft > 0 && stats.gems >= cost;
-
+  const cap = maxStreakShields(stats.current_streak);
   const now = new Date();
   const pendingBlocks = todayBlocks.filter(
     (b) =>
@@ -66,7 +53,7 @@ export function StreakPanel() {
 
   return (
     <div className="space-y-3">
-      {/* Aviso transitorio (escudo usado, racha recuperada…) */}
+      {/* Aviso transitorio (protector usado, racha recuperada…) */}
       {notice && (
         <button
           onClick={dismissNotice}
@@ -89,47 +76,18 @@ export function StreakPanel() {
                 {stats.lost_streak === 1 ? 'día' : 'días'} te está esperando
               </p>
               <p className="mt-1 text-sm text-slate-400">
-                Tropezar no borra el camino recorrido. Tienes dos formas de
-                revivirla:
+                Completa todos los bloques de hoy y vuelve sola, sumando el
+                día de hoy.
               </p>
             </div>
             <span className="shrink-0 rounded-full bg-warning/15 px-3 py-1 font-display text-sm font-bold tabular-nums text-warning">
               ⏳ {formatLeft(windowLeft)}
             </span>
           </div>
-
-          <div className="mt-4 rounded-xl border border-success/30 bg-success/10 px-4 py-3">
-            <p className="text-sm font-semibold text-success">
-              💪 Gratis: completa todos los bloques de hoy
-            </p>
-            <p className="mt-0.5 text-xs text-slate-400">
-              Tu racha vuelve sola, y con el día de hoy sumado.
-            </p>
-          </div>
-
-          <button
-            onClick={async () => {
-              setBusy(true);
-              await repairLostStreak();
-              setBusy(false);
-            }}
-            disabled={!canRepair || busy}
-            className="btn-ghost mt-2 w-full text-sm disabled:opacity-40"
-          >
-            {busy
-              ? 'Reviviendo…'
-              : `⚡ O revívela ya mismo por 💎 ${cost}`}
-          </button>
-          {stats.gems < cost && (
-            <p className="mt-2 text-center text-xs text-slate-500">
-              (te faltan 💎 {cost - stats.gems} para la vía rápida — la gratis
-              siempre está disponible)
-            </p>
-          )}
         </div>
       )}
 
-      {/* Estado de racha + escudos */}
+      {/* Estado de racha + protectores */}
       <div className="card">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -137,17 +95,10 @@ export function StreakPanel() {
               🔥 {stats.current_streak}{' '}
               {stats.current_streak === 1 ? 'día' : 'días'} de racha
             </p>
-            <p className="mt-0.5 text-xs text-slate-400">
-              Multiplicador de XP:{' '}
-              <span className="font-bold text-accent-300">
-                ×{multiplier.toFixed(1)}
-              </span>
-              {multiplier < 2 && ' · crece con tu racha hasta ×2.0'}
-            </p>
           </div>
           <div className="text-right">
             <p className="text-lg tracking-wider">
-              {Array.from({ length: MAX_SHIELDS }, (_, i) => (
+              {Array.from({ length: cap }, (_, i) => (
                 <span
                   key={i}
                   className={
@@ -159,7 +110,7 @@ export function StreakPanel() {
               ))}
             </p>
             <p className="text-[10px] uppercase tracking-wider text-slate-500">
-              escudos
+              protectores
             </p>
           </div>
         </div>
@@ -194,18 +145,10 @@ export function StreakPanel() {
         </p>
 
         <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
-          La llama solo se apaga si pasa un día entero sin completar ningún
-          bloque — y aun así, tienes 48 h para revivirla. Los escudos 🛡️ cubren
-          días vacíos automáticamente.
+          Cada {SHIELD_STREAK_INTERVAL_DAYS} días de racha ganas un protector
+          🛡️ (tope {cap}, sube a 2 pasados los {LONG_STREAK_THRESHOLD} días).
+          Cubren un día vacío automáticamente.
         </p>
-
-        {/* Tienda */}
-        <button
-          onClick={openShop}
-          className="btn-ghost mt-3 w-full text-sm"
-        >
-          🛒 Abrir tienda — escudos, cofres e impulsos con tus 💎 {stats.gems}
-        </button>
       </div>
     </div>
   );

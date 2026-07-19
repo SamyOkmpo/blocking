@@ -20,6 +20,7 @@ PWA de auto-disciplina gamificada: programas **bloques de enfoque** con tareas, 
 2. Abre **SQL Editor → New query** y ejecuta:
    - Base nueva: [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql) y luego [`supabase/actualiza.sql`](supabase/actualiza.sql).
    - Base que ya tiene 001: solo [`supabase/actualiza.sql`](supabase/actualiza.sql) (combina las migraciones 002 y 003; es idempotente, puedes ejecutarlo las veces que quieras).
+   - Base que ya ejecutó la migración 004 (tienda, ahora eliminada): ejecuta también [`supabase/migrations/005_quita_tienda.sql`](supabase/migrations/005_quita_tienda.sql) para quitar las columnas de gemas/cofres/impulso que ya no se usan.
 3. Para probar sin confirmación de correo: **Authentication → Sign In / Up → desactiva "Confirm email"**.
 4. Copia de **Project Settings → API**: la **Project URL** y la **anon key**.
 
@@ -68,16 +69,13 @@ Todas las tablas tienen **RLS**: cada usuario solo ve y modifica lo suyo.
 
 La filosofía: **el trabajo duro son los bloques; la racha es fácil de mantener y difícil de perder para siempre.** Fallar nunca es el fin del camino.
 
-- **XP**: +10 por tarea, +25 por bloque, +15 si fue *perfecto* (≥20% del tiempo restante), todo multiplicado por el **multiplicador de racha** (×1.0 → ×2.0 a los 30 días).
-- **Racha 🔥 amable**: crece al completar **todos** los bloques del día. Un día parcial (al menos 1 bloque) la **mantiene viva** sin crecer; solo un día entero sin completar nada la pone en riesgo — y ahí entran los escudos y el rescate.
-- **Gemas 💎**: +5 por bloque, +10 si es perfecto, +15 por día completo, +25 por logro, +50 por subir de nivel, +10 por volver tras un tropiezo.
-- **Cofre diario 🎁** (refuerzo variable): el primer bloque de cada día abre un cofre con recompensa aleatoria — gemas (10–150, con jackpot del 2%), XP extra o incluso un escudo.
-- **Tienda 🛒** (se abre tocando el chip 💎 del header o desde el panel de racha, sin ocupar un tab): escudo (150 💎), **cofre misterioso** (75 💎, apertura instantánea con recompensa aleatoria) e **impulso ×2 de XP** para el resto del día (100 💎, uno por día). Incluye la guía de cómo ganar gemas.
-- **Escudos 🛡️** (estilo *streak freeze*): todos empiezan con **1 gratis**; cuestan 150 💎, máximo 2. Cubren automáticamente los días vacíos.
-- **Revivir racha ❤️‍🔥**: al perderla se abre una ventana de **48 h** con dos caminos: **gratis**, completando todos los bloques de hoy (la racha vuelve y crece), o al instante pagando 💎 (25 × días, entre 50 y 300).
-- **Bono de regreso 🌱**: el primer bloque después de perder una racha da +20 XP y +10 💎 con el mensaje "volviste, eso es lo que cuenta".
+- **XP**: +10 por tarea, +25 por bloque, +15 si fue *perfecto* (≥20% del tiempo restante), +20 al volver tras un tropiezo, y un bono al completar el día (crece con la racha, hasta 10 días).
+- **Racha 🔥 amable**: crece al completar **todos** los bloques del día. Un día parcial (al menos 1 bloque) la **mantiene viva** sin crecer; solo un día entero sin completar nada la pone en riesgo — y ahí entran los protectores y el rescate.
+- **Protectores de racha 🛡️** (estilo *streak freeze*): se ganan solos, **1 por cada 7 días de racha**, tope de **1** — y tope de **2** una vez superados los 30 días de racha. Cubren automáticamente los días vacíos, sin gastar nada.
+- **Revivir racha ❤️‍🔥**: al perderla se abre una ventana de **48 h** para revivirla **gratis** completando todos los bloques de hoy (la racha vuelve y crece con el día).
+- **Bono de regreso 🌱**: el primer bloque después de perder una racha da +20 XP con el mensaje "volviste, eso es lo que cuenta".
 - **15 niveles** temáticos, de *Aprendiz del Enfoque* a *Deidad del Enfoque* (`src/lib/levels.ts`).
-- **35 logros** en 6 categorías, incluidos *Madrugador*, *Noctámbulo*, *Maratonista*, *Guardián de la llama*, *Fénix*, *Buscador de tesoros* e *Inquebrantable* (`src/lib/achievements.ts`).
+- **35 logros** en 6 categorías, incluidos *Madrugador*, *Noctámbulo*, *Maratonista*, *Guardián de la llama*, *Fénix* e *Inquebrantable* (`src/lib/achievements.ts`).
 
 ### Candado
 
@@ -85,7 +83,28 @@ La filosofía: **el trabajo duro son los bloques; la racha es fácil de mantener
 
 ### Notificaciones
 
-Notificaciones **locales** (Web Notifications API + service worker), sin servidor de push: al activarlas en **Ajustes**, la app programa para los bloques de hoy un aviso 5 minutos antes de empezar y un recordatorio a 10 minutos del final. Funcionan mientras la app está abierta o en segundo plano reciente; con la app totalmente cerrada no hay avisos (eso requeriría infraestructura de web-push, que se dejó fuera a propósito para simplificar el deploy).
+Dos capas, activadas juntas desde **Ajustes → Activar notificaciones**:
+
+- **Locales** (Web Notifications API + service worker): programa para los bloques de hoy un aviso 5 minutos antes de empezar y un recordatorio a 10 minutos del final. Funcionan mientras la app está abierta o en segundo plano reciente.
+- **Push** (Web Push + Vercel Cron): si configuraste las variables VAPID (ver abajo), el dispositivo se suscribe y los mismos avisos llegan **aunque la app esté totalmente cerrada**. Sin esas variables, la app sigue funcionando solo con las notificaciones locales.
+
+**Cómo conectarlas en Vercel:**
+
+1. Ejecuta [`supabase/migrations/006_push_subscriptions.sql`](supabase/migrations/006_push_subscriptions.sql) en el SQL Editor de Supabase (agrega `timezone` a `user_stats` y la tabla `push_subscriptions`).
+2. Genera el par de claves VAPID: `npx web-push generate-vapid-keys`.
+3. En **Vercel → Settings → Environment Variables** agrega:
+
+   | Variable | Valor |
+   |---|---|
+   | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | la "Public Key" generada |
+   | `VAPID_PRIVATE_KEY` | la "Private Key" generada (secreta) |
+   | `VAPID_SUBJECT` | `mailto:tu-correo@ejemplo.com` |
+   | `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → *service_role* en Supabase (secreta) |
+   | `CRON_SECRET` | cualquier string aleatorio largo (ej. `openssl rand -hex 32`) |
+
+4. Redeploy. `vercel.json` ya declara el Cron Job (`/api/cron/notify`, cada minuto) — Vercel lo activa solo al desplegar.
+5. **Importante — plan de Vercel:** el plan **Hobby** limita los Cron Jobs a como mucho una vez al día, lo que no alcanza para avisos puntuales de "5 minutos antes". Con plan **Pro** el cron por minuto funciona tal cual. Si te quedas en Hobby, sustituye el disparo por un servicio externo gratuito (p. ej. [cron-job.org](https://cron-job.org) o un GitHub Action programado) que haga `GET https://tu-app.vercel.app/api/cron/notify` cada minuto con el header `Authorization: Bearer <CRON_SECRET>` — la ruta no depende de que el cron sea de Vercel.
+6. Vuelve a **Ajustes** en la app y toca "Activar notificaciones" de nuevo en cada dispositivo (la suscripción push se crea al activarlas, no es retroactiva).
 
 ## Estructura
 

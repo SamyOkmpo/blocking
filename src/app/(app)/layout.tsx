@@ -5,7 +5,6 @@ import { Header } from '@/components/Header';
 import { BottomNav } from '@/components/BottomNav';
 import { LockScreen } from '@/components/LockScreen';
 import { RewardOverlay } from '@/components/RewardOverlay';
-import { ShopSheet } from '@/components/ShopSheet';
 
 export default async function AppLayout({
   children,
@@ -29,7 +28,6 @@ export default async function AppLayout({
         <BottomNav />
       </div>
       {/* El candado y la recompensa cubren TODO, incluida la navegación */}
-      <ShopSheet />
       <LockScreen />
       <RewardOverlay />
     </AppProvider>
