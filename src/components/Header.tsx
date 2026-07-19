@@ -1,11 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import { useApp } from './AppProvider';
+import { StreakShop } from './StreakShop';
 import { levelForXp, levelProgress, nextLevel } from '@/lib/levels';
 
 /** Header fijo con nivel, barra de XP y racha — siempre visible. */
 export function Header() {
   const { stats } = useApp();
+  const [shopOpen, setShopOpen] = useState(false);
+
   if (!stats) {
     return <header className="safe-top h-20 bg-night-900" />;
   }
@@ -38,17 +42,21 @@ export function Header() {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <div
-            className={`flex items-center gap-1 rounded-xl px-2 py-1.5 font-display text-xs font-bold ${
+          <button
+            onClick={() => setShopOpen(true)}
+            title="Tienda de temas"
+            className={`flex items-center gap-1 rounded-xl px-2 py-1.5 font-display text-xs font-bold transition-transform active:scale-90 ${
               stats.current_streak > 0
                 ? 'bg-warning/15 text-warning'
                 : 'bg-night-800 text-slate-500'
             }`}
           >
             🔥 {stats.current_streak}
-          </div>
+          </button>
         </div>
       </div>
+
+      {shopOpen && <StreakShop onClose={() => setShopOpen(false)} />}
     </header>
   );
 }
