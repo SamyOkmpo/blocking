@@ -174,6 +174,11 @@ export function AppProvider({
     return scheduleLocalNotificationsForToday(todayBlocks);
   }, [todayBlocks]);
 
+  // Tema de la tienda: pinta la app entera vía [data-theme] en <html>
+  useEffect(() => {
+    document.documentElement.dataset.theme = stats?.active_theme || 'violet';
+  }, [stats?.active_theme]);
+
   const now = new Date();
   const activeBlock =
     todayBlocks.find(

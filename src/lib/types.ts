@@ -64,6 +64,9 @@ export interface UserStats {
   last_active_date: string | null;
   comebacks: number;
   timezone: string;
+  streak_coins: number;
+  unlocked_themes: string[];
+  active_theme: string;
   updated_at: string;
 }
 

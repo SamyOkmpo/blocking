@@ -101,10 +101,17 @@ export function RewardOverlay() {
             : flavor.unlock.title}
         </h2>
         {reward.streakRevived && (
-          <p className="mt-1 text-sm text-slate-400">
-            Volviste por ella y la recuperaste completa. 🔥 {reward.streak}{' '}
-            días y contando.
-          </p>
+          <>
+            <p className="mt-1 text-sm text-slate-400">
+              Volviste por ella y la recuperaste completa. 🔥 {reward.streak}{' '}
+              días y contando.
+            </p>
+            {reward.coinsEarned > 0 && (
+              <p className="mt-2 text-xs font-semibold text-amber-300">
+                🪙 +{reward.coinsEarned} moneda de racha
+              </p>
+            )}
+          </>
         )}
 
         {reward.comeback && !reward.streakRevived && (
@@ -145,6 +152,11 @@ export function RewardOverlay() {
             <p className="mt-1 text-xs text-slate-400">
               {flavor.dayCompleted}
             </p>
+            {reward.coinsEarned > 0 && (
+              <p className="mt-2 text-xs font-semibold text-amber-300">
+                🪙 +{reward.coinsEarned} moneda de racha
+              </p>
+            )}
           </div>
         )}
 

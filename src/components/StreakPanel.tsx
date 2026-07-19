@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useApp } from './AppProvider';
+import { StreakCoin } from './StreakCoin';
+import { StreakShop } from './StreakShop';
 import {
   LONG_STREAK_THRESHOLD,
   maxStreakShields,
@@ -25,6 +27,7 @@ function formatLeft(ms: number): string {
 export function StreakPanel() {
   const { stats, todayBlocks, sessions, notice, dismissNotice } = useApp();
   const [, setTick] = useState(0);
+  const [shopOpen, setShopOpen] = useState(false);
 
   // Tick por segundo solo mientras la ventana de reparación está activa
   const windowLeft = stats ? repairWindowLeftMs(stats) : 0;
@@ -90,12 +93,18 @@ export function StreakPanel() {
       {/* Estado de racha + protectores */}
       <div className="card">
         <div className="flex items-center justify-between gap-3">
-          <div>
+          <button
+            onClick={() => setShopOpen(true)}
+            className="-m-1 rounded-xl p-1 text-left transition-transform active:scale-95"
+          >
             <p className="font-display text-lg font-bold text-white">
               🔥 {stats.current_streak}{' '}
               {stats.current_streak === 1 ? 'día' : 'días'} de racha
             </p>
-          </div>
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-amber-300">
+              <StreakCoin size="sm" /> {stats.streak_coins} · Tienda
+            </p>
+          </button>
           <div className="text-right">
             <p className="text-lg tracking-wider">
               {Array.from({ length: cap }, (_, i) => (
@@ -150,6 +159,8 @@ export function StreakPanel() {
           Cubren un día vacío automáticamente.
         </p>
       </div>
+
+      {shopOpen && <StreakShop onClose={() => setShopOpen(false)} />}
     </div>
   );
 }

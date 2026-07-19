@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useApp } from '@/components/AppProvider';
-import { DayPath } from '@/components/DayPath';
 import { StreakPanel } from '@/components/StreakPanel';
 import {
   blockPhase,
@@ -49,9 +48,6 @@ export default function HoyPage() {
           })}
         </p>
       </div>
-
-      {/* Camino de hoy: los bloques como paradas de un mapa */}
-      <DayPath />
 
       {/* Racha, escudos y reparación */}
       <StreakPanel />

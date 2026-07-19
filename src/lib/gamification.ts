@@ -48,6 +48,7 @@ export interface RewardResult {
   streakRevived: boolean; // ❤️‍🔥 rescate gratis: día completo dentro de la ventana
   shieldEarned: boolean; // 🛡️ nueva semana de racha completada
   isPerfect: boolean; // 💎 bloque terminado con tiempo de sobra
+  coinsEarned: number; // 🪙 monedas de racha ganadas (1 por día de racha)
 }
 
 /** Logros cuyo requisito ya se cumple pero aún no están desbloqueados. */
@@ -116,6 +117,7 @@ export async function awardBlockCompletion(
   let dayCompleted = false;
   let streakRevived = false;
   let shieldEarned = false;
+  let coinsEarned = 0;
 
   if (opts.allDayBlocksCompleted && lastStreakDate !== today) {
     if (lostStreak > 0 && repairWindowLeftMs(stats) > 0) {
@@ -131,6 +133,7 @@ export async function awardBlockCompletion(
     }
     lastStreakDate = today;
     dayCompleted = true;
+    coinsEarned = 1; // 🪙 una moneda de racha por cada día que la racha crece
     xp += streakBonusXp(streak);
 
     // 🛡️ Cada semana completa de racha da un protector (tope según la racha)
@@ -163,6 +166,7 @@ export async function awardBlockCompletion(
     lost_streak_at: lostStreakAt,
     streaks_repaired: streaksRepaired,
     streak_shields: shields,
+    streak_coins: stats.streak_coins + coinsEarned,
     comebacks: stats.comebacks + (comeback ? 1 : 0),
     early_blocks: stats.early_blocks + (hour < 8 ? 1 : 0),
     night_blocks: stats.night_blocks + (hour >= 21 ? 1 : 0),
@@ -209,6 +213,7 @@ export async function awardBlockCompletion(
     streakRevived,
     shieldEarned,
     isPerfect,
+    coinsEarned,
   };
 }
 

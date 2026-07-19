@@ -21,6 +21,7 @@ PWA de auto-disciplina gamificada: programas **bloques de enfoque** con tareas, 
    - Base nueva: [`supabase/migrations/001_init.sql`](supabase/migrations/001_init.sql) y luego [`supabase/actualiza.sql`](supabase/actualiza.sql).
    - Base que ya tiene 001: solo [`supabase/actualiza.sql`](supabase/actualiza.sql) (combina las migraciones 002 y 003; es idempotente, puedes ejecutarlo las veces que quieras).
    - Base que ya ejecutó la migración 004 (tienda, ahora eliminada): ejecuta también [`supabase/migrations/005_quita_tienda.sql`](supabase/migrations/005_quita_tienda.sql) para quitar las columnas de gemas/cofres/impulso que ya no se usan.
+   - Tienda de temas (monedas de racha): ejecuta también [`supabase/migrations/008_tienda_racha.sql`](supabase/migrations/008_tienda_racha.sql).
 3. Para probar sin confirmación de correo: **Authentication → Sign In / Up → desactiva "Confirm email"**.
 4. Copia de **Project Settings → API**: la **Project URL** y la **anon key**.
 
@@ -76,6 +77,7 @@ La filosofía: **el trabajo duro son los bloques; la racha es fácil de mantener
 - **Bono de regreso 🌱**: el primer bloque después de perder una racha da +20 XP con el mensaje "volviste, eso es lo que cuenta".
 - **15 niveles** temáticos, de *Aprendiz del Enfoque* a *Deidad del Enfoque* (`src/lib/levels.ts`).
 - **35 logros** en 6 categorías, incluidos *Madrugador*, *Noctámbulo*, *Maratonista*, *Guardián de la llama*, *Fénix* e *Inquebrantable* (`src/lib/achievements.ts`).
+- **Monedas de racha 🪙🔥**: 1 por cada día que la racha crece. Se tocan desde el ícono de racha en "Hoy" y abren la **tienda de temas** (`src/lib/themes.ts`): temas de color cosméticos para toda la app, sin ningún efecto en XP/racha/logros.
 
 ### Candado
 
@@ -124,8 +126,8 @@ src/
       bloques/nuevo/       # crear bloque
       bloques/[id]/        # editar / eliminar bloque
       ajustes/             # notificaciones, sesión, instalación
-  components/              # AppProvider, LockScreen, RewardOverlay, Heatmap…
-  lib/                     # gamificación, niveles, logros, tiempo, sonido
+  components/              # AppProvider, LockScreen, RewardOverlay, StreakShop…
+  lib/                     # gamificación, niveles, logros, temas, tiempo, sonido
 supabase/migrations/       # esquema + RLS
 public/sw.js               # service worker (offline + clic en notificaciones)
 ```

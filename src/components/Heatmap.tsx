@@ -4,31 +4,23 @@ import { useMemo, useState } from 'react';
 import { localDateStr, MONTH_NAMES } from '@/lib/time';
 import type { BlockSession } from '@/lib/types';
 
-export type DayStatus = 'none' | 'completo' | 'parcial' | 'fallido';
+export type DayStatus = 'none' | 'completo';
 
-// Paleta validada (CVD + contraste) sobre superficie #0b0b18
 const CELL_COLORS: Record<DayStatus, string> = {
   none: '#16162c',
   completo: '#9d78f6',
-  parcial: '#7c3aed',
-  fallido: '#b91c1c',
 };
 
 const LEGEND: { status: DayStatus; label: string }[] = [
-  { status: 'completo', label: '100%' },
-  { status: 'parcial', label: 'Parcial' },
-  { status: 'fallido', label: 'Fallido' },
-  { status: 'none', label: 'Sin datos' },
+  { status: 'completo', label: 'Completado' },
 ];
 
+/** Un día cuenta como completo solo si TODOS sus bloques quedaron hechos. */
 export function dayStatus(daySessions: BlockSession[]): DayStatus {
-  if (daySessions.length === 0) return 'none';
-  const completed = daySessions.filter((s) => s.status === 'completed').length;
-  const failed = daySessions.filter((s) => s.status === 'failed').length;
-  if (completed === daySessions.length) return 'completo';
-  if (completed > 0) return 'parcial';
-  if (failed > 0) return 'fallido';
-  return 'none'; // solo sesiones activas (hoy, en curso)
+  return daySessions.length > 0 &&
+    daySessions.every((s) => s.status === 'completed')
+    ? 'completo'
+    : 'none';
 }
 
 /**
