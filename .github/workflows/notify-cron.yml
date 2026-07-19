@@ -1,0 +1,22 @@
+name: Disparar notificaciones push
+
+# Vercel Hobby no permite Cron Jobs más frecuentes que 1x/día, así que el
+# disparo real vive aquí: GitHub Actions es gratis en repos públicos y
+# soporta hasta cada 5 minutos.
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar /api/cron/notify
+        run: |
+          curl -sS --fail-with-body -X GET \
+            "${APP_URL}/api/cron/notify" \
+            -H "Authorization: Bearer ${CRON_SECRET}"
+        env:
+          APP_URL: ${{ vars.APP_URL || 'https://blocking-iota.vercel.app' }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

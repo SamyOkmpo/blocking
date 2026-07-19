@@ -86,11 +86,13 @@ La filosofía: **el trabajo duro son los bloques; la racha es fácil de mantener
 Dos capas, activadas juntas desde **Ajustes → Activar notificaciones**:
 
 - **Locales** (Web Notifications API + service worker): programa para los bloques de hoy un aviso 5 minutos antes de empezar y un recordatorio a 10 minutos del final. Funcionan mientras la app está abierta o en segundo plano reciente.
-- **Push** (Web Push + Vercel Cron): si configuraste las variables VAPID (ver abajo), el dispositivo se suscribe y los mismos avisos llegan **aunque la app esté totalmente cerrada**. Sin esas variables, la app sigue funcionando solo con las notificaciones locales.
+- **Push** (Web Push + un disparador externo cada 5 min): si configuraste las variables VAPID (ver abajo), el dispositivo se suscribe y los mismos avisos llegan **aunque la app esté totalmente cerrada**. Sin esas variables, la app sigue funcionando solo con las notificaciones locales.
 
-**Cómo conectarlas en Vercel:**
+> **¿Por qué no usa el Cron de Vercel?** El plan **Hobby** de Vercel limita los Cron Jobs a como mucho una vez al día — no alcanza para avisos de "5 minutos antes". Por eso el disparo real vive en [`.github/workflows/notify-cron.yml`](.github/workflows/notify-cron.yml): un GitHub Action programado cada 5 minutos que simplemente llama `GET /api/cron/notify`. Es gratis en repos públicos y no depende del plan de Vercel. La ruta calcula qué avisos "ya tocaban" en una ventana de 15 minutos y usa una tabla de deduplicado (`sent_push_notifications`) para no repetirlos, así que tolera que el disparo no llegue exacto al minuto.
 
-1. Ejecuta [`supabase/migrations/006_push_subscriptions.sql`](supabase/migrations/006_push_subscriptions.sql) en el SQL Editor de Supabase (agrega `timezone` a `user_stats` y la tabla `push_subscriptions`).
+**Cómo conectarlas:**
+
+1. Ejecuta en orden, en el SQL Editor de Supabase: [`006_push_subscriptions.sql`](supabase/migrations/006_push_subscriptions.sql) y [`007_dedupe_notificaciones.sql`](supabase/migrations/007_dedupe_notificaciones.sql).
 2. Genera el par de claves VAPID: `npx web-push generate-vapid-keys`.
 3. En **Vercel → Settings → Environment Variables** agrega:
 
@@ -102,9 +104,12 @@ Dos capas, activadas juntas desde **Ajustes → Activar notificaciones**:
    | `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → *service_role* en Supabase (secreta) |
    | `CRON_SECRET` | cualquier string aleatorio largo (ej. `openssl rand -hex 32`) |
 
-4. Redeploy. `vercel.json` ya declara el Cron Job (`/api/cron/notify`, cada minuto) — Vercel lo activa solo al desplegar.
-5. **Importante — plan de Vercel:** el plan **Hobby** limita los Cron Jobs a como mucho una vez al día, lo que no alcanza para avisos puntuales de "5 minutos antes". Con plan **Pro** el cron por minuto funciona tal cual. Si te quedas en Hobby, sustituye el disparo por un servicio externo gratuito (p. ej. [cron-job.org](https://cron-job.org) o un GitHub Action programado) que haga `GET https://tu-app.vercel.app/api/cron/notify` cada minuto con el header `Authorization: Bearer <CRON_SECRET>` — la ruta no depende de que el cron sea de Vercel.
-6. Vuelve a **Ajustes** en la app y toca "Activar notificaciones" de nuevo en cada dispositivo (la suscripción push se crea al activarlas, no es retroactiva).
+4. Redeploy en Vercel.
+5. En **GitHub → tu repo → Settings → Secrets and variables → Actions**:
+   - Pestaña **Secrets**: agrega `CRON_SECRET` con el mismo valor que pusiste en Vercel.
+   - (Opcional) Pestaña **Variables**: agrega `APP_URL` con la URL de tu deploy si es distinta de `https://blocking-iota.vercel.app` (el workflow ya trae esa por defecto).
+6. El workflow arranca solo con el próximo push a `main`, o dispáralo a mano desde **Actions → Disparar notificaciones push → Run workflow** para probarlo enseguida.
+7. Vuelve a **Ajustes** en la app y toca "Activar notificaciones" de nuevo en cada dispositivo (la suscripción push se crea al activarla, no es retroactiva).
 
 ## Estructura
 
