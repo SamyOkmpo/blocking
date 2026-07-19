@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useApp } from './AppProvider';
 import { StreakCoin } from './StreakCoin';
 import { createClient } from '@/lib/supabase/client';
@@ -10,14 +11,22 @@ import { buyTheme, setActiveTheme, THEMES } from '@/lib/themes';
  * Tienda de temas: se paga con monedas de racha (1 por día que la racha
  * crece). Solo cambia colores de acento — cosmético puro, no toca XP,
  * racha ni ninguna otra mecánica.
+ *
+ * Se monta con un portal a document.body: si viviera como hijo normal de
+ * un ancestro con backdrop-blur/transform (como el Header), ese ancestro
+ * crea un "containing block" nuevo y el position:fixed de este modal
+ * quedaría atrapado dentro de su caja en vez de cubrir la pantalla.
  */
 export function StreakShop({ onClose }: { onClose: () => void }) {
   const { userId, stats, refresh } = useApp();
   const supabase = useMemo(() => createClient(), []);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
-  if (!stats || !userId) return null;
+  useEffect(() => setMounted(true), []);
+
+  if (!stats || !userId || !mounted) return null;
 
   async function handleBuy(themeId: string) {
     if (!userId || !stats) return;
@@ -40,7 +49,7 @@ export function StreakShop({ onClose }: { onClose: () => void }) {
     await refresh();
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-night-950/90 backdrop-blur-sm safe-top sm:items-center sm:px-6">
       <div className="max-h-[85vh] w-full max-w-sm animate-slide-up overflow-y-auto rounded-t-3xl border border-accent-500/30 bg-night-850 p-6 shadow-2xl safe-bottom sm:rounded-3xl">
         <div className="flex items-center justify-between">
@@ -132,6 +141,7 @@ export function StreakShop({ onClose }: { onClose: () => void }) {
           })}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
