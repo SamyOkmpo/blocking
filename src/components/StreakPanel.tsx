@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useApp } from './AppProvider';
-import { StreakCoin } from './StreakCoin';
 import { StreakShop } from './StreakShop';
 import {
   LONG_STREAK_THRESHOLD,
@@ -117,9 +116,6 @@ export function StreakPanel() {
             <p className="font-display text-lg font-bold text-white">
               🔥 {stats.current_streak}{' '}
               {stats.current_streak === 1 ? 'día' : 'días'} de racha
-            </p>
-            <p className="mt-0.5 flex items-center gap-1.5 text-xs font-semibold text-amber-300">
-              <StreakCoin size="sm" /> {stats.streak_coins} monedas
             </p>
           </div>
           <div className="text-right">

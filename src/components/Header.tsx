@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useApp } from './AppProvider';
+import { LevelsModal } from './LevelsModal';
 import { StreakShop } from './StreakShop';
 import { levelForXp, levelProgress, nextLevel } from '@/lib/levels';
 
@@ -9,6 +10,7 @@ import { levelForXp, levelProgress, nextLevel } from '@/lib/levels';
 export function Header() {
   const { stats } = useApp();
   const [shopOpen, setShopOpen] = useState(false);
+  const [levelsOpen, setLevelsOpen] = useState(false);
 
   if (!stats) {
     return <header className="safe-top h-20 bg-night-900" />;
@@ -21,9 +23,13 @@ export function Header() {
   return (
     <header className="safe-top sticky top-0 z-40 border-b border-night-700/50 bg-night-900/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-md items-center gap-3 px-4 py-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-600/20 font-display text-sm font-bold text-accent-300">
+        <button
+          onClick={() => setLevelsOpen(true)}
+          title="Ver niveles"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-600/20 font-display text-sm font-bold text-accent-300 transition-transform active:scale-90"
+        >
           {level.level}
-        </div>
+        </button>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
             <p className="truncate font-display text-sm font-semibold text-white">
@@ -57,6 +63,12 @@ export function Header() {
       </div>
 
       {shopOpen && <StreakShop onClose={() => setShopOpen(false)} />}
+      {levelsOpen && (
+        <LevelsModal
+          totalXp={stats.total_xp}
+          onClose={() => setLevelsOpen(false)}
+        />
+      )}
     </header>
   );
 }
