@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { useApp } from './AppProvider';
 import { achievementDef } from '@/lib/achievements';
@@ -11,19 +11,11 @@ import { playUnlockSound } from '@/lib/sound';
  * Celebración al completar un bloque: confetti, sonido, XP ganado,
  * subida de nivel, racha y logros desbloqueados.
  */
-const CHEST_LABEL: Record<string, (amount: number) => string> = {
-  gems: (n) => `💎 ${n} gemas`,
-  xp: (n) => `⚡ ${n} XP extra`,
-  shield: () => '🛡️ ¡Un escudo de racha!',
-};
-
 export function RewardOverlay() {
   const { reward, dismissReward } = useApp();
-  const [chestOpen, setChestOpen] = useState(false);
 
   useEffect(() => {
     if (!reward) return;
-    setChestOpen(false);
     playUnlockSound();
     const colors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ffffff'];
     confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 }, colors });
@@ -87,64 +79,7 @@ export function RewardOverlay() {
           <p className="rounded-full bg-accent-500/15 px-5 py-2 font-display text-xl font-bold text-accent-300">
             +{reward.xpGained} XP
           </p>
-          <p className="rounded-full bg-accent-500/15 px-4 py-2 font-display text-lg font-bold text-accent-200">
-            +{reward.gemsGained} 💎
-          </p>
         </div>
-        {reward.multiplier > 1 && (
-          <p className="mt-2 text-xs font-semibold text-warning">
-            🔥 Multiplicador de racha ×{reward.multiplier.toFixed(1)} aplicado
-          </p>
-        )}
-        {reward.boosted && (
-          <p className="mt-1 text-xs font-semibold text-accent-300">
-            ⚡ Impulso de la tienda: XP duplicado
-          </p>
-        )}
-
-        {/* 🎁 Cofre diario: primer bloque del día */}
-        {reward.chest && (
-          <div className="mt-4">
-            {!chestOpen ? (
-              <button
-                onClick={() => {
-                  setChestOpen(true);
-                  if (navigator.vibrate) navigator.vibrate(40);
-                  confetti({
-                    particleCount: 40,
-                    spread: 60,
-                    origin: { y: 0.7 },
-                    colors: ['#fbbf24', '#f59e0b', '#c4b5fd'],
-                  });
-                }}
-                className="w-full animate-pulse-glow rounded-2xl border border-warning/40 bg-warning/10 p-4 transition-transform active:scale-95"
-              >
-                <span className="text-4xl">🎁</span>
-                <p className="mt-1 font-display text-sm font-bold text-warning">
-                  Cofre diario — tócalo para abrirlo
-                </p>
-                <p className="text-xs text-slate-400">
-                  Por tu primer bloque de hoy
-                </p>
-              </button>
-            ) : (
-              <div className="animate-pop-in rounded-2xl border border-warning/40 bg-warning/10 p-4">
-                <span className="text-4xl">✨</span>
-                <p className="mt-1 font-display text-lg font-bold text-warning">
-                  {CHEST_LABEL[reward.chest.kind](reward.chest.amount)}
-                </p>
-                {reward.chest.kind === 'gems' && reward.chest.amount >= 150 && (
-                  <p className="text-xs font-semibold text-white">
-                    🎰 ¡JACKPOT!
-                  </p>
-                )}
-                <p className="text-xs text-slate-400">
-                  Ya está sumado a tu recompensa
-                </p>
-              </div>
-            )}
-          </div>
-        )}
 
         {reward.leveledUp && (
           <div className="mt-4 animate-slide-up rounded-2xl border border-warning/30 bg-warning/10 p-4">
@@ -165,6 +100,17 @@ export function RewardOverlay() {
             </p>
             <p className="mt-1 text-xs text-slate-400">
               Completaste todos los bloques de hoy
+            </p>
+          </div>
+        )}
+
+        {reward.shieldEarned && (
+          <div className="mt-4 animate-slide-up rounded-2xl border border-accent-500/30 bg-accent-500/10 p-4">
+            <p className="font-display text-lg font-bold text-accent-300">
+              🛡️ ¡Nuevo protector de racha!
+            </p>
+            <p className="mt-1 text-xs text-slate-400">
+              Otra semana de racha completada
             </p>
           </div>
         )}

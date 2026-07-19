@@ -53,7 +53,6 @@ export interface UserStats {
   total_blocks_completed: number;
   perfect_blocks: number;
   last_streak_date: string | null;
-  gems: number;
   streak_shields: number;
   shields_used: number;
   streaks_repaired: number;
@@ -63,9 +62,7 @@ export interface UserStats {
   night_blocks: number;
   max_blocks_in_day: number;
   last_active_date: string | null;
-  chests_opened: number;
   comebacks: number;
-  xp_boost_date: string | null;
   updated_at: string;
 }
 

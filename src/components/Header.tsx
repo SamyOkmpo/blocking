@@ -5,7 +5,7 @@ import { levelForXp, levelProgress, nextLevel } from '@/lib/levels';
 
 /** Header fijo con nivel, barra de XP y racha — siempre visible. */
 export function Header() {
-  const { stats, openShop } = useApp();
+  const { stats } = useApp();
   if (!stats) {
     return <header className="safe-top h-20 bg-night-900" />;
   }
@@ -38,14 +38,6 @@ export function Header() {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <button
-            onClick={openShop}
-            aria-label="Abrir tienda"
-            className="flex items-center gap-1 rounded-xl border border-accent-500/30 bg-accent-500/10 px-2 py-1.5 font-display text-xs font-bold text-accent-300 transition-transform active:scale-90"
-          >
-            💎 {stats.gems}
-            <span className="text-accent-400">+</span>
-          </button>
           <div
             className={`flex items-center gap-1 rounded-xl px-2 py-1.5 font-display text-xs font-bold ${
               stats.current_streak > 0
