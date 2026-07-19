@@ -1,9 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApp } from './AppProvider';
 import { ProgressRing } from './ProgressRing';
 import { playCheckSound } from '@/lib/sound';
+import {
+  ALMOST_DONE_FLAVOR,
+  MID_PROGRESS_FLAVOR,
+  PLENTY_OF_TIME_FLAVOR,
+  TASK_FLAVOR,
+  pickFlavor,
+} from '@/lib/adventure';
 import {
   blockDurationSeconds,
   formatCountdown,
@@ -19,6 +26,19 @@ import {
 export function LockScreen() {
   const { activeBlock, locked, completedTaskIds, toggleTask } = useApp();
   const [secondsLeft, setSecondsLeft] = useState(0);
+  const [toast, setToast] = useState<{ id: number; text: string } | null>(
+    null
+  );
+  const lastFlavorRef = useRef<string | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const footerCategoryRef = useRef<string>('');
+  const footerTextRef = useRef<string>(MID_PROGRESS_FLAVOR[0]);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!activeBlock) return;
@@ -45,8 +65,46 @@ export function LockScreen() {
   const timeFraction = secondsLeft / blockDurationSeconds(activeBlock);
   const urgent = secondsLeft > 0 && secondsLeft < 5 * 60;
 
+  // Variedad narrativa del pie de página: solo se re-elige cuando cambia la
+  // "categoría" (no en cada tick del countdown), para que no parpadee.
+  const footerCategory =
+    timeFraction > 0.5 ? 'plenty' : done === total - 1 && total > 0 ? 'almost' : 'mid';
+  if (footerCategoryRef.current !== footerCategory) {
+    footerCategoryRef.current = footerCategory;
+    const pool =
+      footerCategory === 'plenty'
+        ? PLENTY_OF_TIME_FLAVOR
+        : footerCategory === 'almost'
+          ? ALMOST_DONE_FLAVOR
+          : MID_PROGRESS_FLAVOR;
+    footerTextRef.current = pickFlavor(pool, footerTextRef.current);
+  }
+
+  const handleToggle = (taskId: string, isDone: boolean) => {
+    if (!isDone) {
+      playCheckSound();
+      const flavor = pickFlavor(TASK_FLAVOR, lastFlavorRef.current);
+      lastFlavorRef.current = flavor;
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      setToast({ id: Date.now(), text: flavor });
+      toastTimerRef.current = setTimeout(() => setToast(null), 1600);
+    }
+    toggleTask(activeBlock.id, taskId);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto bg-night-950/98 backdrop-blur-sm safe-top safe-bottom">
+      {/* Micro-celebración por tarea: fugaz, no bloquea ni satura */}
+      {toast && (
+        <div
+          key={toast.id}
+          className="pointer-events-none fixed left-1/2 top-6 z-[55] -translate-x-1/2 animate-pop-in safe-top"
+        >
+          <span className="whitespace-nowrap rounded-full border border-accent-500/40 bg-night-850/95 px-4 py-2 text-sm font-semibold text-accent-200 shadow-lg shadow-accent-600/10">
+            {toast.text}
+          </span>
+        </div>
+      )}
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-6 pb-10 pt-8">
         {/* Cabecera del candado */}
         <div className="mb-6 text-center animate-slide-up">
@@ -98,10 +156,7 @@ export function LockScreen() {
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <button
-                  onClick={() => {
-                    if (!isDone) playCheckSound();
-                    toggleTask(activeBlock.id, task.id);
-                  }}
+                  onClick={() => handleToggle(task.id, isDone)}
                   className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition-all active:scale-[0.98] ${
                     isDone
                       ? 'border-accent-500/50 bg-accent-500/10'
@@ -132,13 +187,7 @@ export function LockScreen() {
 
         {/* Mensaje motivacional al pie */}
         <div className="mt-auto pt-8 text-center">
-          <p className="text-sm text-slate-500">
-            {timeFraction > 0.5
-              ? 'Tienes tiempo de sobra. Una tarea a la vez. 🎯'
-              : done === total - 1 && total > 0
-                ? '¡Solo falta una! 💪'
-                : 'El candado se abre cuando termines todo.'}
-          </p>
+          <p className="text-sm text-slate-500">{footerTextRef.current}</p>
         </div>
       </div>
     </div>

@@ -47,6 +47,7 @@ export interface RewardResult {
   comeback: boolean; // 🌱 volvió después de perder la racha
   streakRevived: boolean; // ❤️‍🔥 rescate gratis: día completo dentro de la ventana
   shieldEarned: boolean; // 🛡️ nueva semana de racha completada
+  isPerfect: boolean; // 💎 bloque terminado con tiempo de sobra
 }
 
 /** Logros cuyo requisito ya se cumple pero aún no están desbloqueados. */
@@ -207,6 +208,7 @@ export async function awardBlockCompletion(
     comeback,
     streakRevived,
     shieldEarned,
+    isPerfect,
   };
 }
 

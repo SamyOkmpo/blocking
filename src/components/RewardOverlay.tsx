@@ -1,54 +1,90 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { useApp } from './AppProvider';
 import { achievementDef } from '@/lib/achievements';
 import { LEVELS } from '@/lib/levels';
 import { playUnlockSound } from '@/lib/sound';
+import {
+  CONTINUE_BUTTON_FLAVOR,
+  DAY_COMPLETED_FLAVOR,
+  PERFECT_FLAVOR,
+  UNLOCK_HEADLINES,
+  pickFlavor,
+} from '@/lib/adventure';
 
 /**
  * Celebración al completar un bloque: confetti, sonido, XP ganado,
- * subida de nivel, racha y logros desbloqueados.
+ * subida de nivel, racha y logros desbloqueados. La intensidad y el texto
+ * varían según qué tan especial fue el logro, para que no se sienta siempre
+ * igual.
  */
 export function RewardOverlay() {
   const { reward, dismissReward } = useApp();
+
+  // "Grande" = merece la celebración completa (día, nivel o rescate de
+  // racha); un bloque suelto normal recibe una versión más contenida para
+  // no saturar cuando esto pasa muchas veces al día.
+  const big = Boolean(
+    reward?.dayCompleted || reward?.leveledUp || reward?.streakRevived
+  );
 
   useEffect(() => {
     if (!reward) return;
     playUnlockSound();
     const colors = ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ffffff'];
-    confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 }, colors });
-    const t1 = setTimeout(
-      () =>
-        confetti({
-          particleCount: 60,
-          angle: 60,
-          spread: 60,
-          origin: { x: 0, y: 0.7 },
-          colors,
-        }),
-      250
-    );
-    const t2 = setTimeout(
-      () =>
-        confetti({
-          particleCount: 60,
-          angle: 120,
-          spread: 60,
-          origin: { x: 1, y: 0.7 },
-          colors,
-        }),
-      400
-    );
-    if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
+    confetti({
+      particleCount: big ? 90 : 50,
+      spread: big ? 75 : 55,
+      origin: { y: 0.6 },
+      colors,
+    });
+    const timers = big
+      ? [
+          setTimeout(
+            () =>
+              confetti({
+                particleCount: 60,
+                angle: 60,
+                spread: 60,
+                origin: { x: 0, y: 0.7 },
+                colors,
+              }),
+            250
+          ),
+          setTimeout(
+            () =>
+              confetti({
+                particleCount: 60,
+                angle: 120,
+                spread: 60,
+                origin: { x: 1, y: 0.7 },
+                colors,
+              }),
+            400
+          ),
+        ]
+      : [];
+    if (navigator.vibrate) navigator.vibrate(big ? [60, 40, 60] : [40]);
+    return () => timers.forEach(clearTimeout);
+  }, [reward, big]);
+
+  // Variedad narrativa: se elige una vez por recompensa (no en cada
+  // re-render) para que el texto no cambie mientras se ve el overlay.
+  const flavor = useMemo(() => {
+    if (!reward) return null;
+    return {
+      unlock:
+        UNLOCK_HEADLINES[Math.floor(Math.random() * UNLOCK_HEADLINES.length)],
+      dayCompleted: pickFlavor(DAY_COMPLETED_FLAVOR),
+      perfect: pickFlavor(PERFECT_FLAVOR),
+      button: pickFlavor(CONTINUE_BUTTON_FLAVOR),
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reward]);
 
-  if (!reward) return null;
+  if (!reward || !flavor) return null;
 
   const levelName =
     LEVELS.find((l) => l.level === reward.newLevel)?.name ?? '';
@@ -56,11 +92,13 @@ export function RewardOverlay() {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-night-950/90 px-6 backdrop-blur-sm safe-top safe-bottom">
       <div className="w-full max-w-sm animate-pop-in rounded-3xl border border-accent-500/30 bg-night-850 p-8 text-center shadow-2xl shadow-accent-600/20">
-        <div className="text-6xl">{reward.streakRevived ? '❤️‍🔥' : '🔓'}</div>
+        <div className="text-6xl">
+          {reward.streakRevived ? '❤️‍🔥' : flavor.unlock.emoji}
+        </div>
         <h2 className="mt-4 font-display text-2xl font-bold text-white">
           {reward.streakRevived
             ? '¡Tu racha ha revivido!'
-            : '¡Bloque desbloqueado!'}
+            : flavor.unlock.title}
         </h2>
         {reward.streakRevived && (
           <p className="mt-1 text-sm text-slate-400">
@@ -72,6 +110,12 @@ export function RewardOverlay() {
         {reward.comeback && !reward.streakRevived && (
           <p className="mt-2 rounded-xl bg-success/10 px-4 py-2 text-sm font-medium text-success">
             🌱 Volviste, y eso es lo que cuenta. Bono de regreso aplicado.
+          </p>
+        )}
+
+        {reward.isPerfect && !reward.streakRevived && (
+          <p className="mt-2 text-sm font-medium text-accent-300">
+            {flavor.perfect}
           </p>
         )}
 
@@ -99,7 +143,7 @@ export function RewardOverlay() {
               {reward.streak === 1 ? 'día' : 'días'}
             </p>
             <p className="mt-1 text-xs text-slate-400">
-              Completaste todos los bloques de hoy
+              {flavor.dayCompleted}
             </p>
           </div>
         )}
@@ -136,7 +180,7 @@ export function RewardOverlay() {
         )}
 
         <button onClick={dismissReward} className="btn-primary mt-6 w-full">
-          Seguir así 💪
+          {flavor.button}
         </button>
       </div>
     </div>
