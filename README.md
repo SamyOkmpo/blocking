@@ -73,7 +73,7 @@ La filosofía: **el trabajo duro son los bloques; la racha es fácil de mantener
 - **XP**: +10 por tarea, +25 por bloque, +15 si fue *perfecto* (≥20% del tiempo restante), +20 al volver tras un tropiezo, y un bono al completar el día (crece con la racha, hasta 10 días).
 - **Racha 🔥 amable**: crece al completar **todos** los bloques del día. Un día parcial (al menos 1 bloque) la **mantiene viva** sin crecer; solo un día entero sin completar nada la pone en riesgo — y ahí entran los protectores y el rescate.
 - **Protectores de racha 🛡️** (estilo *streak freeze*): se ganan solos, **1 por cada 7 días de racha**, tope de **1** — y tope de **2** una vez superados los 30 días de racha. Cubren automáticamente los días vacíos, sin gastar nada.
-- **Revivir racha ❤️‍🔥**: al perderla se abre una ventana de **48 h** para revivirla **gratis** completando todos los bloques de hoy (la racha vuelve y crece con el día).
+- **Revivir racha ❤️‍🔥**: al perderla se abre una ventana de **48 h** para revivirla **gratis** completando todos los bloques de hoy (la racha vuelve y crece con el día). Pasadas las 48 h, se puede **comprar de vuelta con monedas de racha** (precio = días perdidos + 5 🪙) hasta 30 días después de perderla — pasado ese plazo, se olvida para siempre.
 - **Bono de regreso 🌱**: el primer bloque después de perder una racha da +20 XP con el mensaje "volviste, eso es lo que cuenta".
 - **15 niveles** temáticos, de *Aprendiz del Enfoque* a *Deidad del Enfoque* (`src/lib/levels.ts`).
 - **35 logros** en 6 categorías, incluidos *Madrugador*, *Noctámbulo*, *Maratonista*, *Guardián de la llama*, *Fénix* e *Inquebrantable* (`src/lib/achievements.ts`).

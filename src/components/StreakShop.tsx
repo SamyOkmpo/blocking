@@ -5,6 +5,12 @@ import { createPortal } from 'react-dom';
 import { useApp } from './AppProvider';
 import { StreakCoin } from './StreakCoin';
 import { createClient } from '@/lib/supabase/client';
+import {
+  buyStreakRevival,
+  lostStreakBuyWindowLeftMs,
+  repairWindowLeftMs,
+  streakRevivalPrice,
+} from '@/lib/gamification';
 import { buyTheme, setActiveTheme, THEMES } from '@/lib/themes';
 
 /**
@@ -27,6 +33,26 @@ export function StreakShop({ onClose }: { onClose: () => void }) {
   useEffect(() => setMounted(true), []);
 
   if (!stats || !userId || !mounted) return null;
+
+  const freeWindowLeft = repairWindowLeftMs(stats);
+  const buyWindowLeft = lostStreakBuyWindowLeftMs(stats);
+  const canBuyRevival =
+    stats.lost_streak > 0 && freeWindowLeft === 0 && buyWindowLeft > 0;
+  const revivalPrice = streakRevivalPrice(stats.lost_streak);
+  const revivalDaysLeft = Math.max(1, Math.ceil(buyWindowLeft / (24 * 3600_000)));
+
+  async function handleBuyRevival() {
+    if (!userId || !stats) return;
+    setError(null);
+    setBusyId('__revival__');
+    const result = await buyStreakRevival(supabase, { userId, stats });
+    setBusyId(null);
+    if (!result.ok) {
+      setError(result.error ?? 'No se pudo revivir. Intenta de nuevo.');
+      return;
+    }
+    await refresh();
+  }
 
   async function handleBuy(themeId: string) {
     if (!userId || !stats) return;
@@ -81,6 +107,31 @@ export function StreakShop({ onClose }: { onClose: () => void }) {
           de color para toda la app.
         </p>
 
+        {canBuyRevival && (
+          <div className="mt-4 rounded-2xl border border-danger/40 bg-gradient-to-br from-night-850 to-danger/10 p-4">
+            <p className="font-display text-base font-bold text-white">
+              ❤️‍🔥 Revivir racha perdida
+            </p>
+            <p className="mt-1 text-sm text-slate-400">
+              Tenías {stats.lost_streak}{' '}
+              {stats.lost_streak === 1 ? 'día' : 'días'} de racha. Disponible
+              por {revivalDaysLeft} {revivalDaysLeft === 1 ? 'día' : 'días'}{' '}
+              más.
+            </p>
+            <button
+              onClick={handleBuyRevival}
+              disabled={
+                busyId === '__revival__' || stats.streak_coins < revivalPrice
+              }
+              className="btn-primary mt-3 w-full disabled:opacity-40"
+            >
+              {busyId === '__revival__'
+                ? 'Reviviendo…'
+                : `Revivir por 🪙 ${revivalPrice}`}
+            </button>
+          </div>
+        )}
+
         {error && (
           <p className="mt-3 rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">
             {error}
@@ -88,6 +139,9 @@ export function StreakShop({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="mt-5 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+            Temas
+          </p>
           {THEMES.map((theme) => {
             const owned = stats.unlocked_themes.includes(theme.id);
             const active = stats.active_theme === theme.id;

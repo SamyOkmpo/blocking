@@ -19,6 +19,8 @@ export const SHIELD_STREAK_INTERVAL_DAYS = 7;
 export const LONG_STREAK_THRESHOLD = 30;
 /** Horas disponibles para revivir una racha perdida completando el día. */
 export const REPAIR_WINDOW_HOURS = 48;
+/** Días que se recuerda una racha perdida para poder comprarla de vuelta con monedas, pasada la ventana gratis. */
+export const LOST_STREAK_MEMORY_DAYS = 30;
 
 /** Máximo de protectores que se pueden acumular según la racha actual. */
 export function maxStreakShields(streak: number): number {
@@ -29,12 +31,34 @@ export function streakBonusXp(streak: number): number {
   return 5 * Math.min(streak, 10);
 }
 
-/** Milisegundos que quedan de la ventana de rescate (0 si expiró). */
+/** Milisegundos que quedan de la ventana de rescate GRATIS (0 si expiró). */
 export function repairWindowLeftMs(stats: UserStats, now = new Date()): number {
   if (stats.lost_streak <= 0 || !stats.lost_streak_at) return 0;
   const deadline =
     new Date(stats.lost_streak_at).getTime() + REPAIR_WINDOW_HOURS * 3600_000;
   return Math.max(0, deadline - now.getTime());
+}
+
+/**
+ * Milisegundos que quedan para poder COMPRAR de vuelta una racha perdida
+ * con monedas (0 si no hay ninguna, o si ya pasaron los
+ * LOST_STREAK_MEMORY_DAYS). Es una ventana más larga que la gratis: cubre
+ * el momento en que la gratis ya se venció.
+ */
+export function lostStreakBuyWindowLeftMs(
+  stats: UserStats,
+  now = new Date()
+): number {
+  if (stats.lost_streak <= 0 || !stats.lost_streak_at) return 0;
+  const deadline =
+    new Date(stats.lost_streak_at).getTime() +
+    LOST_STREAK_MEMORY_DAYS * 24 * 3600_000;
+  return Math.max(0, deadline - now.getTime());
+}
+
+/** Precio en monedas de racha 🪙 para revivir una racha perdida de este tamaño. */
+export function streakRevivalPrice(lostStreak: number): number {
+  return lostStreak + 5;
 }
 
 export interface RewardResult {
@@ -237,6 +261,53 @@ export async function markBlockFailed(
 }
 
 /**
+ * Revive con monedas de racha 🪙 una racha perdida cuya ventana gratis de
+ * 48h ya se venció (pero sigue dentro de LOST_STREAK_MEMORY_DAYS). A
+ * diferencia del rescate gratis, restaura el número exacto que tenías sin
+ * el bono de +1 del día de hoy — porque aquí no hiciste el trabajo de hoy,
+ * lo compraste con racha pasada.
+ */
+export async function buyStreakRevival(
+  supabase: SupabaseClient,
+  opts: { userId: string; stats: UserStats }
+): Promise<{ ok: boolean; error?: string }> {
+  const { stats } = opts;
+  if (stats.lost_streak <= 0) {
+    return { ok: false, error: 'No tienes ninguna racha perdida por revivir.' };
+  }
+  if (repairWindowLeftMs(stats) > 0) {
+    return {
+      ok: false,
+      error: 'Todavía estás en la ventana gratis: completa los bloques de hoy.',
+    };
+  }
+  if (lostStreakBuyWindowLeftMs(stats) === 0) {
+    return { ok: false, error: 'Esta racha perdida ya expiró.' };
+  }
+  const price = streakRevivalPrice(stats.lost_streak);
+  if (stats.streak_coins < price) {
+    return { ok: false, error: 'No te alcanzan las monedas de racha.' };
+  }
+
+  const today = localDateStr();
+  const { error } = await supabase
+    .from('user_stats')
+    .update({
+      current_streak: stats.lost_streak,
+      longest_streak: Math.max(stats.longest_streak, stats.lost_streak),
+      last_streak_date: today,
+      last_active_date: today,
+      streak_coins: stats.streak_coins - price,
+      lost_streak: 0,
+      lost_streak_at: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', opts.userId);
+
+  return { ok: !error, error: error?.message };
+}
+
+/**
  * Marca manualmente un bloque de un día pasado como completado — para
  * cuando el usuario sí hizo las tareas en la vida real pero el candado no
  * lo registró (no tenía el celular, la app estaba cerrada, etc.).
@@ -331,7 +402,8 @@ export type ReconcileOutcome = 'shield_used' | 'streak_lost' | 'none';
  *   los cubren (uno por día); si no alcanzan, la racha queda perdida pero
  *   recuperable: 48 h para revivirla gratis completando todos los bloques
  *   de hoy.
- * - Limpia ventanas de rescate expiradas.
+ * - Olvida las rachas perdidas que ya superaron LOST_STREAK_MEMORY_DAYS
+ *   (antes de eso, siguen disponibles para comprarlas de vuelta).
  */
 export async function reconcileStreak(
   supabase: SupabaseClient,
@@ -340,8 +412,10 @@ export async function reconcileStreak(
   let outcome: ReconcileOutcome = 'none';
   const updated: Partial<UserStats> = {};
 
-  // Ventana de rescate expirada → limpiar
-  if (stats.lost_streak > 0 && repairWindowLeftMs(stats) === 0) {
+  // La racha perdida se recuerda LOST_STREAK_MEMORY_DAYS (para poder
+  // comprarla de vuelta con monedas incluso después de que se venció la
+  // ventana gratis de 48h) — pasado ese plazo, se olvida para siempre.
+  if (stats.lost_streak > 0 && lostStreakBuyWindowLeftMs(stats) === 0) {
     updated.lost_streak = 0;
     updated.lost_streak_at = null;
   }
