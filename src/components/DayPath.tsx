@@ -52,11 +52,9 @@ export function DayPath() {
                 className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 text-xs font-bold transition-all ${
                   status === 'done'
                     ? 'border-success bg-success text-night-950'
-                    : status === 'failed'
-                      ? 'border-danger/50 bg-night-850 text-danger'
-                      : status === 'active'
-                        ? 'animate-pulse-glow border-accent-500 bg-accent-500/20 text-accent-300'
-                        : 'border-night-600 bg-night-850 text-slate-500'
+                    : status === 'active'
+                      ? 'animate-pulse-glow border-accent-500 bg-accent-500/20 text-accent-300'
+                      : 'border-night-600 bg-night-850 text-slate-500'
                 }`}
               >
                 {status === 'done'

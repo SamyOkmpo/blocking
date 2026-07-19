@@ -51,7 +51,7 @@ export interface RewardResult {
 }
 
 /** Logros cuyo requisito ya se cumple pero aún no están desbloqueados. */
-async function findFreshAchievements(
+export async function findFreshAchievements(
   supabase: SupabaseClient,
   stats: UserStats
 ): Promise<string[]> {
@@ -232,47 +232,89 @@ export async function markBlockFailed(
 }
 
 /**
- * Reinicia por completo el progreso del usuario: racha, XP, nivel, logros
- * e historial de sesiones/tareas completadas. Los bloques y tareas
- * (las plantillas) NO se tocan — solo el rastro de gamificación.
+ * Marca manualmente un bloque de un día pasado como completado — para
+ * cuando el usuario sí hizo las tareas en la vida real pero el candado no
+ * lo registró (no tenía el celular, la app estaba cerrada, etc.).
+ *
+ * Suma XP y contadores como un bloque normal, pero NO toca racha ni
+ * protectores: esa maquinaria ya asume avance día a día y alterarla desde
+ * una fecha pasada podría dejarla en un estado inconsistente. La racha ya
+ * tiene su propio mecanismo de tolerancia (protectores + ventana de
+ * rescate) para estos casos.
  */
-export async function resetStats(
+export async function markSessionCompletedManually(
   supabase: SupabaseClient,
-  userId: string
-): Promise<boolean> {
-  const [{ error: sessionsError }, { error: achievementsError }] =
-    await Promise.all([
-      supabase.from('block_sessions').delete().eq('user_id', userId),
-      supabase.from('achievements').delete().eq('user_id', userId),
-    ]);
-  if (sessionsError || achievementsError) return false;
+  opts: {
+    userId: string;
+    timeBlockId: string;
+    date: string;
+    taskIds: string[];
+  }
+): Promise<{ xpGained: number; newAchievements: string[] } | null> {
+  const { data: session } = await supabase
+    .from('block_sessions')
+    .upsert(
+      {
+        user_id: opts.userId,
+        time_block_id: opts.timeBlockId,
+        date: opts.date,
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+      },
+      { onConflict: 'time_block_id,date' }
+    )
+    .select()
+    .single();
+  if (!session) return null;
 
-  const { error: statsError } = await supabase
+  if (opts.taskIds.length > 0) {
+    await supabase.from('task_completions').upsert(
+      opts.taskIds.map((taskId) => ({
+        session_id: session.id,
+        task_id: taskId,
+        user_id: opts.userId,
+      })),
+      { onConflict: 'session_id,task_id', ignoreDuplicates: true }
+    );
+  }
+
+  const { data: stats } = await supabase
     .from('user_stats')
-    .update({
-      current_streak: 0,
-      longest_streak: 0,
-      total_xp: 0,
-      level: 1,
-      total_tasks_completed: 0,
-      total_blocks_completed: 0,
-      perfect_blocks: 0,
-      last_streak_date: null,
-      streak_shields: 1,
-      shields_used: 0,
-      streaks_repaired: 0,
-      lost_streak: 0,
-      lost_streak_at: null,
-      early_blocks: 0,
-      night_blocks: 0,
-      max_blocks_in_day: 0,
-      last_active_date: null,
-      comebacks: 0,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('user_id', userId);
+    .select('*')
+    .eq('user_id', opts.userId)
+    .single<UserStats>();
+  if (!stats) return null;
 
-  return !statsError;
+  const xp = opts.taskIds.length * XP_PER_TASK + XP_BLOCK_BONUS;
+  const totalXp = stats.total_xp + xp;
+  const updated: Partial<UserStats> = {
+    total_xp: totalXp,
+    level: levelForXp(totalXp).level,
+    total_tasks_completed: stats.total_tasks_completed + opts.taskIds.length,
+    total_blocks_completed: stats.total_blocks_completed + 1,
+    updated_at: new Date().toISOString(),
+  };
+
+  const newAchievements = await findFreshAchievements(supabase, {
+    ...stats,
+    ...updated,
+  } as UserStats);
+
+  await supabase.from('user_stats').update(updated).eq('user_id', opts.userId);
+  await supabase
+    .from('block_sessions')
+    .update({ xp_earned: xp })
+    .eq('id', session.id);
+  if (newAchievements.length > 0) {
+    await supabase.from('achievements').insert(
+      newAchievements.map((type) => ({
+        user_id: opts.userId,
+        achievement_type: type,
+      }))
+    );
+  }
+
+  return { xpGained: xp, newAchievements };
 }
 
 export type ReconcileOutcome = 'shield_used' | 'streak_lost' | 'none';

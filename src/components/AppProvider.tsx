@@ -14,7 +14,6 @@ import {
   awardBlockCompletion,
   markBlockFailed,
   reconcileStreak,
-  resetStats,
   type RewardResult,
 } from '@/lib/gamification';
 import {
@@ -48,7 +47,6 @@ interface AppContextValue {
   toggleTask: (blockId: string, taskId: string) => Promise<void>;
   dismissReward: () => void;
   dismissNotice: () => void;
-  resetAllStats: () => Promise<boolean>;
   refresh: () => Promise<void>;
 }
 
@@ -321,12 +319,6 @@ export function AppProvider({
     [todayBlocks, sessions, completedTaskIds, supabase, userId, refresh]
   );
 
-  const resetAllStats = useCallback(async () => {
-    const ok = await resetStats(supabase, userId);
-    if (ok) await refresh();
-    return ok;
-  }, [supabase, userId, refresh]);
-
   const value: AppContextValue = {
     userId,
     stats,
@@ -341,7 +333,6 @@ export function AppProvider({
     toggleTask,
     dismissReward: () => setReward(null),
     dismissNotice: () => setNotice(null),
-    resetAllStats,
     refresh,
   };
 
