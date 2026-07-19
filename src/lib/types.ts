@@ -63,6 +63,7 @@ export interface UserStats {
   max_blocks_in_day: number;
   last_active_date: string | null;
   comebacks: number;
+  timezone: string;
   updated_at: string;
 }
 

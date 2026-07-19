@@ -2,6 +2,7 @@
 
 import type { TimeBlockWithTasks } from './types';
 import { timeToMinutes } from './time';
+import { subscribeToPush } from './push';
 
 export async function ensurePermission(): Promise<boolean> {
   if (typeof Notification === 'undefined') return false;
@@ -21,10 +22,17 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   }
 }
 
-/** Pide permiso de notificaciones y deja el service worker listo. */
+/**
+ * Pide permiso de notificaciones, deja el service worker listo y —si hay
+ * push configurado (`NEXT_PUBLIC_VAPID_PUBLIC_KEY`)— suscribe el
+ * dispositivo para recibir avisos aunque la app esté cerrada.
+ */
 export async function enableNotifications(): Promise<boolean> {
   const granted = await ensurePermission();
-  if (granted) await registerServiceWorker();
+  if (granted) {
+    await registerServiceWorker();
+    await subscribeToPush();
+  }
   return granted;
 }
 

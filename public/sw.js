@@ -75,6 +75,26 @@ self.addEventListener('fetch', (event) => {
   }
 });
 
+/* ---- Notificaciones push (servidor, vía Vercel Cron + web-push) ---- */
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = {};
+  }
+  const title = data.title || 'Bloqueo';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body,
+      tag: data.tag,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/badge-72.png',
+      data: { url: data.url || '/' },
+    })
+  );
+});
+
 /* ---- Notificaciones (locales, mostradas vía registration.showNotification) ---- */
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();

@@ -229,6 +229,50 @@ export async function markBlockFailed(
   return Boolean(data && data.length > 0);
 }
 
+/**
+ * Reinicia por completo el progreso del usuario: racha, XP, nivel, logros
+ * e historial de sesiones/tareas completadas. Los bloques y tareas
+ * (las plantillas) NO se tocan — solo el rastro de gamificación.
+ */
+export async function resetStats(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<boolean> {
+  const [{ error: sessionsError }, { error: achievementsError }] =
+    await Promise.all([
+      supabase.from('block_sessions').delete().eq('user_id', userId),
+      supabase.from('achievements').delete().eq('user_id', userId),
+    ]);
+  if (sessionsError || achievementsError) return false;
+
+  const { error: statsError } = await supabase
+    .from('user_stats')
+    .update({
+      current_streak: 0,
+      longest_streak: 0,
+      total_xp: 0,
+      level: 1,
+      total_tasks_completed: 0,
+      total_blocks_completed: 0,
+      perfect_blocks: 0,
+      last_streak_date: null,
+      streak_shields: 1,
+      shields_used: 0,
+      streaks_repaired: 0,
+      lost_streak: 0,
+      lost_streak_at: null,
+      early_blocks: 0,
+      night_blocks: 0,
+      max_blocks_in_day: 0,
+      last_active_date: null,
+      comebacks: 0,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId);
+
+  return !statsError;
+}
+
 export type ReconcileOutcome = 'shield_used' | 'streak_lost' | 'none';
 
 /**

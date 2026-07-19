@@ -14,6 +14,7 @@ import {
   awardBlockCompletion,
   markBlockFailed,
   reconcileStreak,
+  resetStats,
   type RewardResult,
 } from '@/lib/gamification';
 import {
@@ -47,6 +48,7 @@ interface AppContextValue {
   toggleTask: (blockId: string, taskId: string) => Promise<void>;
   dismissReward: () => void;
   dismissNotice: () => void;
+  resetAllStats: () => Promise<boolean>;
   refresh: () => Promise<void>;
 }
 
@@ -105,6 +107,18 @@ export function AppProvider({
       setStats(reconciled);
       if (outcome === 'shield_used') {
         setNotice('🛡️ Un escudo protegió tu racha mientras no estabas.');
+      }
+
+      // El cron de notificaciones push corre en el servidor: guarda la zona
+      // horaria del dispositivo para poder comparar la hora local de cada
+      // usuario contra sus bloques.
+      const deviceTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (deviceTz && deviceTz !== reconciled.timezone) {
+        supabase
+          .from('user_stats')
+          .update({ timezone: deviceTz })
+          .eq('user_id', userId)
+          .then(() => {});
       }
     }
 
@@ -307,6 +321,12 @@ export function AppProvider({
     [todayBlocks, sessions, completedTaskIds, supabase, userId, refresh]
   );
 
+  const resetAllStats = useCallback(async () => {
+    const ok = await resetStats(supabase, userId);
+    if (ok) await refresh();
+    return ok;
+  }, [supabase, userId, refresh]);
+
   const value: AppContextValue = {
     userId,
     stats,
@@ -321,6 +341,7 @@ export function AppProvider({
     toggleTask,
     dismissReward: () => setReward(null),
     dismissNotice: () => setNotice(null),
+    resetAllStats,
     refresh,
   };
 
