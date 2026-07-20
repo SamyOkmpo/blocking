@@ -18,9 +18,30 @@ export function nowMinutes(d: Date = new Date()): number {
   return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
 }
 
-/** "HH:MM:SS" → "HH:MM" */
+/** "HH:MM(:SS)" → { time: "9:00", period: "a.m." } en formato de 12 horas. */
+function parse12(t: string): { time: string; period: 'a.m.' | 'p.m.' } {
+  const [h, m] = t.split(':').map(Number);
+  const period = h < 12 ? 'a.m.' : 'p.m.';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return { time: `${h12}:${String(m).padStart(2, '0')}`, period };
+}
+
+/** "HH:MM:SS" → "9:00 a.m." (12 horas, más intuitivo que la hora militar). */
 export function formatTime(t: string): string {
-  return t.slice(0, 5);
+  const { time, period } = parse12(t);
+  return `${time} ${period}`;
+}
+
+/**
+ * Rango de horas en 12 h. Si ambas caen en el mismo meridiano, lo muestra una
+ * sola vez ("9:00–10:30 a.m."); si no, en cada una ("11:00 a.m. – 1:00 p.m.").
+ */
+export function formatTimeRange(start: string, end: string): string {
+  const s = parse12(start);
+  const e = parse12(end);
+  return s.period === e.period
+    ? `${s.time}–${e.time} ${e.period}`
+    : `${s.time} ${s.period} – ${e.time} ${e.period}`;
 }
 
 /**

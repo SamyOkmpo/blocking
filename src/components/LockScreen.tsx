@@ -14,7 +14,7 @@ import {
 import {
   blockDurationSeconds,
   formatCountdown,
-  formatTime,
+  formatTimeRange,
   secondsUntilEnd,
 } from '@/lib/time';
 
@@ -115,7 +115,7 @@ export function LockScreen() {
             {activeBlock.title}
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            {formatTime(activeBlock.start_time)} – {formatTime(activeBlock.end_time)}
+            {formatTimeRange(activeBlock.start_time, activeBlock.end_time)}
           </p>
         </div>
 

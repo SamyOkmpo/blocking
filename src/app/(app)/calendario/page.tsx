@@ -8,7 +8,7 @@ import { markSessionCompletedManually } from '@/lib/gamification';
 import {
   blockOccursOn,
   DAY_NAMES,
-  formatTime,
+  formatTimeRange,
   localDateStr,
   weekDates,
 } from '@/lib/time';
@@ -184,8 +184,7 @@ export default function CalendarioPage() {
                             {block.title}
                           </span>
                           <span className="shrink-0 text-xs tabular-nums text-slate-400">
-                            {formatTime(block.start_time)}–
-                            {formatTime(block.end_time)}
+                            {formatTimeRange(block.start_time, block.end_time)}
                           </span>
                         </Link>
                         {canMarkDone && (
