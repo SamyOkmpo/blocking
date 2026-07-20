@@ -1,45 +1,46 @@
 /**
- * Textos y helpers de "modo aventura": variedad narrativa para que
- * completar tareas y bloques no se sienta repetitivo. Puramente cosmético,
- * no afecta XP, rachas ni el modelo de datos.
+ * Textos y helpers de variedad narrativa: variantes para que completar
+ * tareas y bloques no se sienta repetitivo. Puramente cosmético, no afecta
+ * XP, rachas ni el modelo de datos. El tono es de enfoque y constancia
+ * (bloques y racha), sin metáforas de "camino" ni checkpoints.
  */
 
 /** Micro-mensaje al marcar una tarea dentro del candado. */
 export const TASK_FLAVOR = [
-  'Un paso más en el camino ⛰️',
-  'Encontraste un atajo 🧭',
-  'El sendero se abre ✨',
-  'Terreno ganado 🚶',
-  'Otra pieza del mapa 🗺️',
-  'Sigues avanzando, sin mirar atrás 🔥',
-  'Punto de control superado 🚩',
-  'La aventura continúa 🌄',
-  'Enfoque al máximo 🎯',
+  'Una tarea menos ✅',
+  'Bien hecho 👏',
+  'Sigues enfocado 🎯',
+  'Vas avanzando 💪',
+  '¡Eso es! ⚡',
+  'Progreso real 📈',
+  'Constancia pura 🔥',
+  'Un paso más 👍',
+  'Enfoque total 🧠',
   'Impulso +1 ⚡',
-  'Vas dejando huella 👣',
-  'Un tesoro menos por encontrar 💎',
+  'Lo estás logrando 🙌',
+  'Tarea completada 💎',
 ];
 
 /** Mensaje al pie del candado según cuánto falta. */
 export const PLENTY_OF_TIME_FLAVOR = [
   'Tienes tiempo de sobra. Una tarea a la vez. 🎯',
-  'Ritmo tranquilo, camino firme. 🧭',
-  'Sin prisa: la aventura recompensa la constancia. 🌄',
-  'Vas explorando a tu paso. Todo bien. 🗺️',
+  'Con calma. La constancia hace la racha. 🔥',
+  'Sin prisa: ve a tu ritmo. 👍',
+  'Vas bien de tiempo. Concéntrate. 🧠',
 ];
 
 export const ALMOST_DONE_FLAVOR = [
   '¡Solo falta una! 💪',
-  'Última parada antes del tesoro 💎',
-  'Ya casi llegas al campamento ⛺',
-  'Un tramo más y es tuyo 🏆',
+  'Última tarea antes de terminar 💎',
+  'Ya casi cierras el bloque 🔒',
+  'Un empujón más y es tuyo 🏆',
 ];
 
 export const MID_PROGRESS_FLAVOR = [
   'El candado se abre cuando termines todo. 🔒',
-  'Cada tarea es un tramo del camino. 🧗',
-  'Sigue así, la ruta se acorta. 🚶',
-  'Vas escribiendo la aventura de hoy. 📖',
+  'Cada tarea te acerca al final. ✅',
+  'Sigue así, ya falta menos. 💪',
+  'Enfoque constante, sin distracciones. 🎯',
 ];
 
 /** Elige un elemento evitando repetir el último mostrado (si se pasa). */
@@ -57,28 +58,28 @@ export function pickFlavor(pool: string[], avoid?: string | null): string {
 /** Variantes de encabezado para un desbloqueo de bloque "normal". */
 export const UNLOCK_HEADLINES = [
   { emoji: '🔓', title: '¡Bloque desbloqueado!' },
-  { emoji: '🧗', title: '¡Tramo superado!' },
-  { emoji: '🚪', title: '¡Otra puerta se abre!' },
-  { emoji: '🚩', title: '¡Checkpoint alcanzado!' },
-  { emoji: '⛺', title: '¡Campamento asegurado!' },
+  { emoji: '✅', title: '¡Bloque completado!' },
+  { emoji: '🎯', title: '¡Enfoque logrado!' },
+  { emoji: '🔥', title: '¡Otro bloque para la racha!' },
+  { emoji: '💪', title: '¡Tiempo bien invertido!' },
 ];
 
 export const PERFECT_FLAVOR = [
-  '💎 Hallazgo: llegaste con tiempo de sobra.',
-  '💎 Ruta perfecta, sin desvíos.',
-  '💎 Exploración impecable.',
+  '💎 Terminaste con tiempo de sobra.',
+  '💎 Bloque perfecto, sin distracciones.',
+  '💎 Enfoque impecable.',
 ];
 
 export const DAY_COMPLETED_FLAVOR = [
   'Completaste todos los bloques de hoy',
-  'El mapa de hoy quedó completo 🗺️',
-  'Otro día conquistado de punta a punta 🏕️',
-  'Llegaste al final del camino de hoy 🌄',
+  'Día completo, de principio a fin 🎉',
+  'Otro día redondo para tu racha 🔥',
+  'Cerraste el día sin dejar nada pendiente ✅',
 ];
 
 export const CONTINUE_BUTTON_FLAVOR = [
   'Seguir así 💪',
-  'A por el siguiente tramo 🧭',
-  'Sigamos la aventura 🌄',
-  'Rumbo al próximo checkpoint 🚩',
+  'A por el siguiente 🎯',
+  'Vamos con todo 🔥',
+  'Perfecto 👍',
 ];

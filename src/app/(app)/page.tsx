@@ -8,6 +8,7 @@ import {
   blockPhase,
   formatCountdown,
   formatTime,
+  formatTimeRange,
   timeToMinutes,
 } from '@/lib/time';
 
@@ -157,8 +158,7 @@ export default function HoyPage() {
                         {block.title}
                       </p>
                       <p className="mt-0.5 text-sm text-slate-400">
-                        {formatTime(block.start_time)} –{' '}
-                        {formatTime(block.end_time)}
+                        {formatTimeRange(block.start_time, block.end_time)}
                       </p>
                     </div>
                     {badge[status]}

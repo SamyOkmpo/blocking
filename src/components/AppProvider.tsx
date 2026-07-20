@@ -78,6 +78,9 @@ export function AppProvider({
   // Tick: para detectar cambios de fase (empezó/terminó un bloque)
   const [, setPhaseTick] = useState(0);
   const busyRef = useRef(false);
+  // ¿Ya cargaron los bloques con éxito al menos una vez? Sirve para no
+  // mostrar el estado vacío por un fallo transitorio de red.
+  const loadedRef = useRef(false);
 
   const refresh = useCallback(async () => {
     const today = localDateStr();
@@ -95,6 +98,13 @@ export function AppProvider({
         .eq('user_id', userId)
         .eq('date', today),
     ]);
+
+    // Si la consulta de bloques falla (red lenta o la sesión aún no está
+    // lista al abrir la PWA), no pises los datos actuales ni bajes la
+    // bandera de carga: conserva el estado y deja que el reintento vuelva a
+    // pedirlos. Así se evita el parpadeo de "Hoy no tienes bloques" justo
+    // antes de que los bloques terminen de cargar.
+    if (blocksRes.error) return;
 
     if (statsRes.data) {
       // Mantenimiento de racha: días perdidos → escudos o racha perdida
@@ -145,12 +155,28 @@ export function AppProvider({
     } else {
       setCompletedTaskIds(new Set());
     }
+    loadedRef.current = true;
     setLoading(false);
   }, [supabase, userId]);
 
+  // Carga inicial con reintento: mientras el primer fetch de bloques no tenga
+  // éxito, se mantiene el esqueleto (loading) en vez de mostrar el vacío.
   useEffect(() => {
-    refresh();
+    let cancelled = false;
+    let attempts = 0;
+    let timer: ReturnType<typeof setTimeout>;
+    const load = async () => {
+      await refresh();
+      if (cancelled || loadedRef.current || attempts >= 6) return;
+      attempts += 1;
+      timer = setTimeout(load, Math.min(1000 * 2 ** (attempts - 1), 8000));
+    };
+    load();
     registerServiceWorker();
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [refresh]);
 
   // Re-evaluar fases cada segundo (igual que el candado) y refrescar al
@@ -253,7 +279,7 @@ export function AppProvider({
         const marked = await markBlockFailed(supabase, { sessionId: s.id });
         if (marked) {
           setNotice(
-            `💛 "${b.title}" quedó incompleto — no pasa nada. Tu llama sigue viva: con completar un bloque hoy, el camino continúa.`
+            `💛 "${b.title}" quedó incompleto — no pasa nada. Tu llama sigue viva: completa un bloque hoy y tu racha sigue en pie.`
           );
         }
       }
