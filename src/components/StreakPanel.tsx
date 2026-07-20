@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useApp } from './AppProvider';
+import { StreakMascot } from './StreakMascot';
 import { StreakShop } from './StreakShop';
 import {
   LONG_STREAK_THRESHOLD,
@@ -10,6 +11,7 @@ import {
   repairWindowLeftMs,
   SHIELD_STREAK_INTERVAL_DAYS,
 } from '@/lib/gamification';
+import { mascotForStreak } from '@/lib/mascot';
 import { blockPhase, localDateStr } from '@/lib/time';
 
 function formatLeft(ms: number): string {
@@ -112,11 +114,21 @@ export function StreakPanel() {
       {/* Estado de racha + protectores */}
       <div className="card">
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="font-display text-lg font-bold text-white">
-              🔥 {stats.current_streak}{' '}
-              {stats.current_streak === 1 ? 'día' : 'días'} de racha
-            </p>
+          <div className="flex items-center gap-3">
+            <StreakMascot
+              streak={stats.current_streak}
+              themeId={stats.active_theme}
+              size="lg"
+            />
+            <div>
+              <p className="font-display text-lg font-bold text-white">
+                {stats.current_streak}{' '}
+                {stats.current_streak === 1 ? 'día' : 'días'} de racha
+              </p>
+              <p className="text-xs text-slate-500">
+                {mascotForStreak(stats.current_streak).name}
+              </p>
+            </div>
           </div>
           <div className="text-right">
             <p className="text-lg tracking-wider">

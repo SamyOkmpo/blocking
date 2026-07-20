@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useApp } from './AppProvider';
 import { LevelsModal } from './LevelsModal';
+import { StreakMascot } from './StreakMascot';
 import { StreakShop } from './StreakShop';
 import { frameRingStyle } from '@/lib/frames';
 import { levelForXp, levelProgress, nextLevel } from '@/lib/levels';
@@ -61,7 +62,8 @@ export function Header() {
                 : 'bg-night-800 text-slate-500'
             }`}
           >
-            🔥 {stats.current_streak}
+            <StreakMascot streak={stats.current_streak} themeId={stats.active_theme} />{' '}
+            {stats.current_streak}
           </button>
         </div>
       </div>
