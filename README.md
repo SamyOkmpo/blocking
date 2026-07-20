@@ -22,6 +22,7 @@ PWA de auto-disciplina gamificada: programas **bloques de enfoque** con tareas, 
    - Base que ya tiene 001: solo [`supabase/actualiza.sql`](supabase/actualiza.sql) (combina las migraciones 002 y 003; es idempotente, puedes ejecutarlo las veces que quieras).
    - Base que ya ejecutó la migración 004 (tienda, ahora eliminada): ejecuta también [`supabase/migrations/005_quita_tienda.sql`](supabase/migrations/005_quita_tienda.sql) para quitar las columnas de gemas/cofres/impulso que ya no se usan.
    - Tienda de temas (monedas de racha): ejecuta también [`supabase/migrations/008_tienda_racha.sql`](supabase/migrations/008_tienda_racha.sql).
+   - Marcos de racha y títulos: ejecuta también [`supabase/migrations/009_marcos_titulos.sql`](supabase/migrations/009_marcos_titulos.sql).
 3. Para probar sin confirmación de correo: **Authentication → Sign In / Up → desactiva "Confirm email"**.
 4. Copia de **Project Settings → API**: la **Project URL** y la **anon key**.
 
@@ -76,8 +77,14 @@ La filosofía: **el trabajo duro son los bloques; la racha es fácil de mantener
 - **Revivir racha ❤️‍🔥**: al perderla se abre una ventana de **48 h** para revivirla **gratis** completando todos los bloques de hoy (la racha vuelve y crece con el día). Pasadas las 48 h, se puede **comprar de vuelta con monedas de racha** (precio = días perdidos + 5 🪙) hasta 30 días después de perderla — pasado ese plazo, se olvida para siempre.
 - **Bono de regreso 🌱**: el primer bloque después de perder una racha da +20 XP con el mensaje "volviste, eso es lo que cuenta".
 - **15 niveles** temáticos, de *Aprendiz del Enfoque* a *Deidad del Enfoque* (`src/lib/levels.ts`).
-- **35 logros** en 6 categorías, incluidos *Madrugador*, *Noctámbulo*, *Maratonista*, *Guardián de la llama*, *Fénix* e *Inquebrantable* (`src/lib/achievements.ts`).
-- **Monedas de racha 🪙🔥**: 1 por cada día que la racha crece. Se tocan desde el ícono de racha en "Hoy" y abren la **tienda de temas** (`src/lib/themes.ts`): temas de color cosméticos para toda la app, sin ningún efecto en XP/racha/logros.
+- **36 logros** en 6 categorías, incluidos *Madrugador*, *Noctámbulo*, *Maratonista*, *Guardián de la llama*, *Fénix*, *Inquebrantable* y *Coleccionista* (`src/lib/achievements.ts`).
+- **Monedas de racha 🪙🔥**: 1 por cada día que la racha crece. Se tocan desde el ícono 🔥 del header y abren la **tienda** (`src/components/StreakShop.tsx`) — cosmético puro, cero efecto en XP/racha/logros:
+  - **🎨 Temas** (`src/lib/themes.ts`): recolorean toda la app vía variables CSS. Se pueden **probar en vivo** antes de comprar.
+  - **🖼️ Marcos** (`src/lib/frames.ts`): decoran con un glow la insignia de racha 🔥 del header.
+  - **🏷️ Títulos** (`src/lib/titles.ts`): reemplazan el nombre de nivel mostrado en el header por uno cosmético.
+  - **✨ Destacado**: un ítem sin desbloquear rota una vez al día — sin countdown ni presión, solo para darle una razón a visitar la tienda.
+  - Rareza compartida (`src/lib/rarity.ts`) — común/poco común/raro/épico/legendario — define el color/glow de cada tarjeta; los legendarios llevan un shimmer animado.
+- **Mapa de niveles** (`src/components/LevelsModal.tsx`): toca el número de nivel en el header para ver los 15 niveles obtenidos, el actual (con XP restante) y los bloqueados.
 
 ### Candado
 
@@ -126,8 +133,8 @@ src/
       bloques/nuevo/       # crear bloque
       bloques/[id]/        # editar / eliminar bloque
       ajustes/             # notificaciones, sesión, instalación
-  components/              # AppProvider, LockScreen, RewardOverlay, StreakShop…
-  lib/                     # gamificación, niveles, logros, temas, tiempo, sonido
+  components/              # AppProvider, LockScreen, RewardOverlay, StreakShop, LevelsModal…
+  lib/                     # gamificación, niveles, logros, temas, marcos, títulos, rareza, tiempo, sonido
 supabase/migrations/       # esquema + RLS
 public/sw.js               # service worker (offline + clic en notificaciones)
 ```

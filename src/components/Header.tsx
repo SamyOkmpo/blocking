@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { useApp } from './AppProvider';
 import { LevelsModal } from './LevelsModal';
 import { StreakShop } from './StreakShop';
+import { frameRingStyle } from '@/lib/frames';
 import { levelForXp, levelProgress, nextLevel } from '@/lib/levels';
+import { titleDef } from '@/lib/titles';
 
 /** Header fijo con nivel, barra de XP y racha — siempre visible. */
 export function Header() {
@@ -19,6 +21,7 @@ export function Header() {
   const level = levelForXp(stats.total_xp);
   const next = nextLevel(stats.total_xp);
   const progress = levelProgress(stats.total_xp);
+  const title = stats.active_title !== 'none' ? titleDef(stats.active_title) : null;
 
   return (
     <header className="safe-top sticky top-0 z-40 border-b border-night-700/50 bg-night-900/90 backdrop-blur-md">
@@ -33,7 +36,7 @@ export function Header() {
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
             <p className="truncate font-display text-sm font-semibold text-white">
-              {level.name}
+              {title ? `${title.emoji} ${title.name}` : level.name}
             </p>
             <p className="shrink-0 text-[11px] tabular-nums text-slate-400">
               {stats.total_xp}
@@ -50,7 +53,8 @@ export function Header() {
         <div className="flex shrink-0 items-center gap-1.5">
           <button
             onClick={() => setShopOpen(true)}
-            title="Tienda de temas"
+            title="Tienda"
+            style={frameRingStyle(stats.active_frame)}
             className={`flex items-center gap-1 rounded-xl px-2 py-1.5 font-display text-xs font-bold transition-transform active:scale-90 ${
               stats.current_streak > 0
                 ? 'bg-warning/15 text-warning'

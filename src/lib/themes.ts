@@ -1,11 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import type { ShopEntry } from './rarity';
 import type { UserStats } from './types';
 
-export interface Theme {
-  id: string;
-  name: string;
-  emoji: string;
-  price: number; // en monedas de racha 🪙 (0 = el tema por defecto, ya desbloqueado)
+export interface Theme extends ShopEntry {
   /** Escala 300..700 (mismos valores que la paleta de Tailwind de origen) en "R G B". */
   rgb: { 300: string; 400: string; 500: string; 600: string; 700: string };
 }
@@ -18,6 +15,7 @@ export const THEMES: Theme[] = [
     name: 'Violeta',
     emoji: '🔮',
     price: 0,
+    rarity: 'comun',
     rgb: {
       300: '196 181 253',
       400: '167 139 250',
@@ -31,6 +29,7 @@ export const THEMES: Theme[] = [
     name: 'Océano',
     emoji: '🌊',
     price: 7,
+    rarity: 'poco_comun',
     rgb: {
       300: '125 211 252',
       400: '56 189 248',
@@ -44,6 +43,7 @@ export const THEMES: Theme[] = [
     name: 'Bosque',
     emoji: '🌲',
     price: 14,
+    rarity: 'poco_comun',
     rgb: {
       300: '110 231 183',
       400: '52 211 153',
@@ -57,6 +57,7 @@ export const THEMES: Theme[] = [
     name: 'Ascua',
     emoji: '🔥',
     price: 21,
+    rarity: 'raro',
     rgb: {
       300: '253 186 116',
       400: '251 146 60',
@@ -70,6 +71,7 @@ export const THEMES: Theme[] = [
     name: 'Rosa',
     emoji: '🌸',
     price: 30,
+    rarity: 'epico',
     rgb: {
       300: '253 164 175',
       400: '251 113 133',
@@ -83,6 +85,7 @@ export const THEMES: Theme[] = [
     name: 'Oro',
     emoji: '👑',
     price: 45,
+    rarity: 'legendario',
     rgb: {
       300: '252 211 77',
       400: '251 191 36',

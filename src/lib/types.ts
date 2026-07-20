@@ -67,6 +67,10 @@ export interface UserStats {
   streak_coins: number;
   unlocked_themes: string[];
   active_theme: string;
+  unlocked_frames: string[];
+  active_frame: string;
+  unlocked_titles: string[];
+  active_title: string;
   updated_at: string;
 }
 
