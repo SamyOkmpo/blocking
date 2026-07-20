@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useApp } from './AppProvider';
 import { LevelsModal } from './LevelsModal';
 import { StreakMascot } from './StreakMascot';
-import { StreakShop } from './StreakShop';
 import { frameRingStyle } from '@/lib/frames';
 import { levelForXp, levelProgress, nextLevel } from '@/lib/levels';
 import { titleDef } from '@/lib/titles';
@@ -12,7 +12,6 @@ import { titleDef } from '@/lib/titles';
 /** Header fijo con nivel, barra de XP y racha — siempre visible. */
 export function Header() {
   const { stats } = useApp();
-  const [shopOpen, setShopOpen] = useState(false);
   const [levelsOpen, setLevelsOpen] = useState(false);
 
   if (!stats) {
@@ -52,8 +51,8 @@ export function Header() {
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <button
-            onClick={() => setShopOpen(true)}
+          <Link
+            href="/tienda"
             title="Tienda"
             style={frameRingStyle(stats.active_frame)}
             className={`flex items-center gap-1 rounded-xl px-2 py-1.5 font-display text-xs font-bold transition-transform active:scale-90 ${
@@ -64,11 +63,10 @@ export function Header() {
           >
             <StreakMascot streak={stats.current_streak} themeId={stats.active_theme} />{' '}
             {stats.current_streak}
-          </button>
+          </Link>
         </div>
       </div>
 
-      {shopOpen && <StreakShop onClose={() => setShopOpen(false)} />}
       {levelsOpen && (
         <LevelsModal
           totalXp={stats.total_xp}
