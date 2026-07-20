@@ -5,6 +5,54 @@
 :root {
   --font-inter: 'Inter Variable', system-ui, sans-serif;
   --font-grotesk: 'Space Grotesk Variable', system-ui, sans-serif;
+
+  /* Tema de acento por defecto (Violeta) — los demás temas de la tienda
+     sobreescriben estas variables vía [data-theme="..."] más abajo. */
+  --accent-300: 196 181 253;
+  --accent-400: 167 139 250;
+  --accent-500: 139 92 246;
+  --accent-600: 124 58 237;
+  --accent-700: 109 40 217;
+}
+
+[data-theme='ocean'] {
+  --accent-300: 125 211 252;
+  --accent-400: 56 189 248;
+  --accent-500: 14 165 233;
+  --accent-600: 2 132 199;
+  --accent-700: 3 105 161;
+}
+
+[data-theme='forest'] {
+  --accent-300: 110 231 183;
+  --accent-400: 52 211 153;
+  --accent-500: 16 185 129;
+  --accent-600: 5 150 105;
+  --accent-700: 4 120 87;
+}
+
+[data-theme='ember'] {
+  --accent-300: 253 186 116;
+  --accent-400: 251 146 60;
+  --accent-500: 249 115 22;
+  --accent-600: 234 88 12;
+  --accent-700: 194 65 12;
+}
+
+[data-theme='rose'] {
+  --accent-300: 253 164 175;
+  --accent-400: 251 113 133;
+  --accent-500: 244 63 94;
+  --accent-600: 225 29 72;
+  --accent-700: 190 18 60;
+}
+
+[data-theme='gold'] {
+  --accent-300: 252 211 77;
+  --accent-400: 251 191 36;
+  --accent-500: 245 158 11;
+  --accent-600: 217 119 6;
+  --accent-700: 180 83 9;
 }
 
 html {

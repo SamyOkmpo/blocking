@@ -5,17 +5,14 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { enableNotifications } from '@/lib/notifications';
 import { pushSupported } from '@/lib/push';
-import { useApp } from '@/components/AppProvider';
 
 export default function AjustesPage() {
   const router = useRouter();
-  const { resetAllStats } = useApp();
   const [email, setEmail] = useState<string | null>(null);
   const [notifStatus, setNotifStatus] = useState<
     'unknown' | 'granted' | 'denied' | 'default' | 'unsupported'
   >('unknown');
   const [enabling, setEnabling] = useState(false);
-  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -43,27 +40,6 @@ export default function AjustesPage() {
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
-  }
-
-  async function handleReset() {
-    if (
-      !confirm(
-        '¿Reiniciar TODAS tus estadísticas? Se borran racha, XP, nivel, logros y el historial de bloques completados. Tus bloques y tareas NO se tocan. Esto no se puede deshacer.'
-      )
-    ) {
-      return;
-    }
-    if (!confirm('Confirma una vez más: esto borra tu progreso para siempre.')) {
-      return;
-    }
-    setResetting(true);
-    const ok = await resetAllStats();
-    setResetting(false);
-    if (ok) {
-      router.push('/');
-    } else {
-      alert('No se pudo reiniciar. Intenta de nuevo.');
-    }
   }
 
   return (
@@ -133,24 +109,6 @@ export default function AjustesPage() {
           <strong className="text-slate-300">iPhone:</strong> Compartir →
           &quot;Añadir a pantalla de inicio&quot;.
         </p>
-      </section>
-
-      <section className="card border-danger/30">
-        <h2 className="font-display text-sm font-bold text-danger">
-          Zona de peligro
-        </h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Borra tu racha, XP, nivel, logros y el historial de bloques
-          completados para empezar de cero. Tus bloques y tareas no se
-          borran.
-        </p>
-        <button
-          onClick={handleReset}
-          disabled={resetting}
-          className="btn-ghost mt-4 w-full text-danger disabled:opacity-40"
-        >
-          {resetting ? 'Reiniciando…' : 'Reiniciar estadísticas'}
-        </button>
       </section>
 
       <p className="text-center text-xs text-slate-600">

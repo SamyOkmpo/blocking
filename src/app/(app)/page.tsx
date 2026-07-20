@@ -108,7 +108,7 @@ export default function HoyPage() {
 
             const styles: Record<string, string> = {
               completed: 'border-success/40',
-              failed: 'border-danger/40 opacity-70',
+              failed: 'border-night-700/60 opacity-70',
               active: 'border-accent-500/60 animate-pulse-glow',
               upcoming: 'border-night-700/60',
               past: 'border-night-700/60 opacity-70',
@@ -120,7 +120,7 @@ export default function HoyPage() {
                 </span>
               ),
               failed: (
-                <span className="rounded-full bg-danger/15 px-2.5 py-1 text-[11px] font-bold text-danger">
+                <span className="rounded-full bg-night-700 px-2.5 py-1 text-[11px] font-medium text-slate-400">
                   Incompleto
                 </span>
               ),
@@ -167,9 +167,7 @@ export default function HoyPage() {
                     <div className="mt-3 flex items-center gap-3">
                       <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-night-700">
                         <div
-                          className={`h-full rounded-full transition-[width] duration-500 ${
-                            status === 'failed' ? 'bg-danger' : 'bg-accent-500'
-                          }`}
+                          className="h-full rounded-full bg-accent-500 transition-[width] duration-500"
                           style={{ width: `${(done / total) * 100}%` }}
                         />
                       </div>

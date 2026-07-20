@@ -1,3 +1,6 @@
+import { FRAMES } from './frames';
+import { THEMES } from './themes';
+import { TITLES } from './titles';
 import type { UserStats } from './types';
 
 export interface AchievementDef {
@@ -304,6 +307,17 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     emoji: '🌊',
     category: 'especiales',
     check: (s) => s.comebacks >= 5,
+  },
+  {
+    type: 'coleccionista',
+    name: 'Coleccionista',
+    description: 'Desbloquea todos los temas, marcos y títulos de la tienda',
+    emoji: '🗝️',
+    category: 'especiales',
+    check: (s) =>
+      s.unlocked_themes.length >= THEMES.length &&
+      s.unlocked_frames.length >= FRAMES.length &&
+      s.unlocked_titles.length >= TITLES.length,
   },
 ];
 

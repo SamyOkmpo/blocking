@@ -19,6 +19,8 @@ export const SHIELD_STREAK_INTERVAL_DAYS = 7;
 export const LONG_STREAK_THRESHOLD = 30;
 /** Horas disponibles para revivir una racha perdida completando el día. */
 export const REPAIR_WINDOW_HOURS = 48;
+/** Días que se recuerda una racha perdida para poder comprarla de vuelta con monedas, pasada la ventana gratis. */
+export const LOST_STREAK_MEMORY_DAYS = 30;
 
 /** Máximo de protectores que se pueden acumular según la racha actual. */
 export function maxStreakShields(streak: number): number {
@@ -29,12 +31,34 @@ export function streakBonusXp(streak: number): number {
   return 5 * Math.min(streak, 10);
 }
 
-/** Milisegundos que quedan de la ventana de rescate (0 si expiró). */
+/** Milisegundos que quedan de la ventana de rescate GRATIS (0 si expiró). */
 export function repairWindowLeftMs(stats: UserStats, now = new Date()): number {
   if (stats.lost_streak <= 0 || !stats.lost_streak_at) return 0;
   const deadline =
     new Date(stats.lost_streak_at).getTime() + REPAIR_WINDOW_HOURS * 3600_000;
   return Math.max(0, deadline - now.getTime());
+}
+
+/**
+ * Milisegundos que quedan para poder COMPRAR de vuelta una racha perdida
+ * con monedas (0 si no hay ninguna, o si ya pasaron los
+ * LOST_STREAK_MEMORY_DAYS). Es una ventana más larga que la gratis: cubre
+ * el momento en que la gratis ya se venció.
+ */
+export function lostStreakBuyWindowLeftMs(
+  stats: UserStats,
+  now = new Date()
+): number {
+  if (stats.lost_streak <= 0 || !stats.lost_streak_at) return 0;
+  const deadline =
+    new Date(stats.lost_streak_at).getTime() +
+    LOST_STREAK_MEMORY_DAYS * 24 * 3600_000;
+  return Math.max(0, deadline - now.getTime());
+}
+
+/** Precio en monedas de racha 🪙 para revivir una racha perdida de este tamaño. */
+export function streakRevivalPrice(lostStreak: number): number {
+  return lostStreak + 5;
 }
 
 export interface RewardResult {
@@ -47,10 +71,12 @@ export interface RewardResult {
   comeback: boolean; // 🌱 volvió después de perder la racha
   streakRevived: boolean; // ❤️‍🔥 rescate gratis: día completo dentro de la ventana
   shieldEarned: boolean; // 🛡️ nueva semana de racha completada
+  isPerfect: boolean; // 💎 bloque terminado con tiempo de sobra
+  coinsEarned: number; // 🪙 monedas de racha ganadas (1 por día de racha)
 }
 
 /** Logros cuyo requisito ya se cumple pero aún no están desbloqueados. */
-async function findFreshAchievements(
+export async function findFreshAchievements(
   supabase: SupabaseClient,
   stats: UserStats
 ): Promise<string[]> {
@@ -115,6 +141,7 @@ export async function awardBlockCompletion(
   let dayCompleted = false;
   let streakRevived = false;
   let shieldEarned = false;
+  let coinsEarned = 0;
 
   if (opts.allDayBlocksCompleted && lastStreakDate !== today) {
     if (lostStreak > 0 && repairWindowLeftMs(stats) > 0) {
@@ -130,6 +157,7 @@ export async function awardBlockCompletion(
     }
     lastStreakDate = today;
     dayCompleted = true;
+    coinsEarned = 1; // 🪙 una moneda de racha por cada día que la racha crece
     xp += streakBonusXp(streak);
 
     // 🛡️ Cada semana completa de racha da un protector (tope según la racha)
@@ -162,6 +190,7 @@ export async function awardBlockCompletion(
     lost_streak_at: lostStreakAt,
     streaks_repaired: streaksRepaired,
     streak_shields: shields,
+    streak_coins: stats.streak_coins + coinsEarned,
     comebacks: stats.comebacks + (comeback ? 1 : 0),
     early_blocks: stats.early_blocks + (hour < 8 ? 1 : 0),
     night_blocks: stats.night_blocks + (hour >= 21 ? 1 : 0),
@@ -207,6 +236,8 @@ export async function awardBlockCompletion(
     comeback,
     streakRevived,
     shieldEarned,
+    isPerfect,
+    coinsEarned,
   };
 }
 
@@ -230,47 +261,136 @@ export async function markBlockFailed(
 }
 
 /**
- * Reinicia por completo el progreso del usuario: racha, XP, nivel, logros
- * e historial de sesiones/tareas completadas. Los bloques y tareas
- * (las plantillas) NO se tocan — solo el rastro de gamificación.
+ * Revive con monedas de racha 🪙 una racha perdida cuya ventana gratis de
+ * 48h ya se venció (pero sigue dentro de LOST_STREAK_MEMORY_DAYS). A
+ * diferencia del rescate gratis, restaura el número exacto que tenías sin
+ * el bono de +1 del día de hoy — porque aquí no hiciste el trabajo de hoy,
+ * lo compraste con racha pasada.
  */
-export async function resetStats(
+export async function buyStreakRevival(
   supabase: SupabaseClient,
-  userId: string
-): Promise<boolean> {
-  const [{ error: sessionsError }, { error: achievementsError }] =
-    await Promise.all([
-      supabase.from('block_sessions').delete().eq('user_id', userId),
-      supabase.from('achievements').delete().eq('user_id', userId),
-    ]);
-  if (sessionsError || achievementsError) return false;
+  opts: { userId: string; stats: UserStats }
+): Promise<{ ok: boolean; error?: string }> {
+  const { stats } = opts;
+  if (stats.lost_streak <= 0) {
+    return { ok: false, error: 'No tienes ninguna racha perdida por revivir.' };
+  }
+  if (repairWindowLeftMs(stats) > 0) {
+    return {
+      ok: false,
+      error: 'Todavía estás en la ventana gratis: completa los bloques de hoy.',
+    };
+  }
+  if (lostStreakBuyWindowLeftMs(stats) === 0) {
+    return { ok: false, error: 'Esta racha perdida ya expiró.' };
+  }
+  const price = streakRevivalPrice(stats.lost_streak);
+  if (stats.streak_coins < price) {
+    return { ok: false, error: 'No te alcanzan las monedas de racha.' };
+  }
 
-  const { error: statsError } = await supabase
+  const today = localDateStr();
+  const { error } = await supabase
     .from('user_stats')
     .update({
-      current_streak: 0,
-      longest_streak: 0,
-      total_xp: 0,
-      level: 1,
-      total_tasks_completed: 0,
-      total_blocks_completed: 0,
-      perfect_blocks: 0,
-      last_streak_date: null,
-      streak_shields: 1,
-      shields_used: 0,
-      streaks_repaired: 0,
+      current_streak: stats.lost_streak,
+      longest_streak: Math.max(stats.longest_streak, stats.lost_streak),
+      last_streak_date: today,
+      last_active_date: today,
+      streak_coins: stats.streak_coins - price,
       lost_streak: 0,
       lost_streak_at: null,
-      early_blocks: 0,
-      night_blocks: 0,
-      max_blocks_in_day: 0,
-      last_active_date: null,
-      comebacks: 0,
       updated_at: new Date().toISOString(),
     })
-    .eq('user_id', userId);
+    .eq('user_id', opts.userId);
 
-  return !statsError;
+  return { ok: !error, error: error?.message };
+}
+
+/**
+ * Marca manualmente un bloque de un día pasado como completado — para
+ * cuando el usuario sí hizo las tareas en la vida real pero el candado no
+ * lo registró (no tenía el celular, la app estaba cerrada, etc.).
+ *
+ * Suma XP y contadores como un bloque normal, pero NO toca racha ni
+ * protectores: esa maquinaria ya asume avance día a día y alterarla desde
+ * una fecha pasada podría dejarla en un estado inconsistente. La racha ya
+ * tiene su propio mecanismo de tolerancia (protectores + ventana de
+ * rescate) para estos casos.
+ */
+export async function markSessionCompletedManually(
+  supabase: SupabaseClient,
+  opts: {
+    userId: string;
+    timeBlockId: string;
+    date: string;
+    taskIds: string[];
+  }
+): Promise<{ xpGained: number; newAchievements: string[] } | null> {
+  const { data: session } = await supabase
+    .from('block_sessions')
+    .upsert(
+      {
+        user_id: opts.userId,
+        time_block_id: opts.timeBlockId,
+        date: opts.date,
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+      },
+      { onConflict: 'time_block_id,date' }
+    )
+    .select()
+    .single();
+  if (!session) return null;
+
+  if (opts.taskIds.length > 0) {
+    await supabase.from('task_completions').upsert(
+      opts.taskIds.map((taskId) => ({
+        session_id: session.id,
+        task_id: taskId,
+        user_id: opts.userId,
+      })),
+      { onConflict: 'session_id,task_id', ignoreDuplicates: true }
+    );
+  }
+
+  const { data: stats } = await supabase
+    .from('user_stats')
+    .select('*')
+    .eq('user_id', opts.userId)
+    .single<UserStats>();
+  if (!stats) return null;
+
+  const xp = opts.taskIds.length * XP_PER_TASK + XP_BLOCK_BONUS;
+  const totalXp = stats.total_xp + xp;
+  const updated: Partial<UserStats> = {
+    total_xp: totalXp,
+    level: levelForXp(totalXp).level,
+    total_tasks_completed: stats.total_tasks_completed + opts.taskIds.length,
+    total_blocks_completed: stats.total_blocks_completed + 1,
+    updated_at: new Date().toISOString(),
+  };
+
+  const newAchievements = await findFreshAchievements(supabase, {
+    ...stats,
+    ...updated,
+  } as UserStats);
+
+  await supabase.from('user_stats').update(updated).eq('user_id', opts.userId);
+  await supabase
+    .from('block_sessions')
+    .update({ xp_earned: xp })
+    .eq('id', session.id);
+  if (newAchievements.length > 0) {
+    await supabase.from('achievements').insert(
+      newAchievements.map((type) => ({
+        user_id: opts.userId,
+        achievement_type: type,
+      }))
+    );
+  }
+
+  return { xpGained: xp, newAchievements };
 }
 
 export type ReconcileOutcome = 'shield_used' | 'streak_lost' | 'none';
@@ -282,7 +402,8 @@ export type ReconcileOutcome = 'shield_used' | 'streak_lost' | 'none';
  *   los cubren (uno por día); si no alcanzan, la racha queda perdida pero
  *   recuperable: 48 h para revivirla gratis completando todos los bloques
  *   de hoy.
- * - Limpia ventanas de rescate expiradas.
+ * - Olvida las rachas perdidas que ya superaron LOST_STREAK_MEMORY_DAYS
+ *   (antes de eso, siguen disponibles para comprarlas de vuelta).
  */
 export async function reconcileStreak(
   supabase: SupabaseClient,
@@ -291,8 +412,10 @@ export async function reconcileStreak(
   let outcome: ReconcileOutcome = 'none';
   const updated: Partial<UserStats> = {};
 
-  // Ventana de rescate expirada → limpiar
-  if (stats.lost_streak > 0 && repairWindowLeftMs(stats) === 0) {
+  // La racha perdida se recuerda LOST_STREAK_MEMORY_DAYS (para poder
+  // comprarla de vuelta con monedas incluso después de que se venció la
+  // ventana gratis de 48h) — pasado ese plazo, se olvida para siempre.
+  if (stats.lost_streak > 0 && lostStreakBuyWindowLeftMs(stats) === 0) {
     updated.lost_streak = 0;
     updated.lost_streak_at = null;
   }
