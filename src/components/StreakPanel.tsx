@@ -72,7 +72,7 @@ export function StreakPanel() {
         </button>
       )}
 
-      {/* ❤️‍🔥 Racha perdida recuperable — el camino no ha terminado */}
+      {/* ❤️‍🔥 Racha perdida recuperable — todavía se puede recuperar */}
       {windowLeft > 0 && (
         <div className="card animate-pop-in border-warning/40 bg-gradient-to-br from-night-850 to-warning/10">
           <div className="flex items-start justify-between gap-3">

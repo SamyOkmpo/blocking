@@ -24,7 +24,7 @@ export function Header() {
   const title = stats.active_title !== 'none' ? titleDef(stats.active_title) : null;
 
   return (
-    <header className="safe-top sticky top-0 z-40 border-b border-night-700/50 bg-night-900/90 backdrop-blur-md">
+    <header className="safe-top sticky top-0 z-40 border-b border-night-700/50 bg-night-900">
       <div className="mx-auto flex max-w-md items-center gap-3 px-4 py-3">
         <button
           onClick={() => setLevelsOpen(true)}

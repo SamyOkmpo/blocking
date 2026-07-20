@@ -23,9 +23,28 @@ export function formatTime(t: string): string {
   return t.slice(0, 5);
 }
 
+/**
+ * ¿El bloque se creó el mismo día `date` pero cuando su hora de inicio ya
+ * había pasado? En ese caso el hueco de hoy ya se fue al crearlo, así que su
+ * primera ocurrencia real es una fecha posterior. Sin esto, un bloque diario
+ * creado por la tarde para una hora de la mañana aparecería como "pasado" y
+ * se marcaría fallido el mismo día en que lo programaste.
+ */
+function createdAfterStartOn(block: TimeBlock, date: Date): boolean {
+  if (!block.created_at) return false;
+  const created = new Date(block.created_at);
+  if (Number.isNaN(created.getTime())) return false;
+  if (localDateStr(created) !== localDateStr(date)) return false;
+  const createdMinutes = created.getHours() * 60 + created.getMinutes();
+  return createdMinutes >= timeToMinutes(block.start_time);
+}
+
 /** ¿Este bloque ocurre en la fecha dada (según su recurrencia)? */
 export function blockOccursOn(block: TimeBlock, date: Date): boolean {
   if (block.is_archived) return false;
+  // Un bloque programado después de su hora de inicio empieza al día
+  // siguiente, no el día en que se creó.
+  if (createdAfterStartOn(block, date)) return false;
   switch (block.recurrence_type) {
     case 'daily':
       return true;
