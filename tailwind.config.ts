@@ -64,6 +64,10 @@ const config: Config = {
           '0%': { transform: 'translateX(-150%)' },
           '100%': { transform: 'translateX(150%)' },
         },
+        'mascot-float': {
+          '0%, 100%': { transform: 'translateY(0) rotate(-2deg)' },
+          '50%': { transform: 'translateY(-3px) rotate(2deg)' },
+        },
       },
       animation: {
         'pop-in': 'pop-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both',
@@ -72,6 +76,7 @@ const config: Config = {
         'pulse-glow': 'pulse-glow 2.4s ease-in-out infinite',
         shake: 'shake 0.4s ease-in-out',
         shimmer: 'shimmer 2.6s ease-in-out infinite',
+        'mascot-float': 'mascot-float 2.4s ease-in-out infinite',
       },
     },
   },

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useApp } from '@/components/AppProvider';
 import { Heatmap } from '@/components/Heatmap';
+import { ShareCardModal } from '@/components/ShareCardModal';
 import { WeeklyTrend } from '@/components/WeeklyTrend';
 import { ACHIEVEMENTS } from '@/lib/achievements';
 import { localDateStr, MONTH_NAMES } from '@/lib/time';
@@ -27,6 +28,7 @@ export default function ProgresoPage() {
   const [monthSessions, setMonthSessions] = useState<BlockSession[]>([]);
   const [weekSessions, setWeekSessions] = useState<BlockSession[]>([]);
   const [unlocked, setUnlocked] = useState<Achievement[]>([]);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // Sesiones del mes visible (heatmap)
   useEffect(() => {
@@ -89,7 +91,15 @@ export default function ProgresoPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="font-display text-2xl font-bold text-white">Progreso</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-display text-2xl font-bold text-white">Progreso</h1>
+        <button
+          onClick={() => setShareOpen(true)}
+          className="btn-ghost px-3.5 py-2 text-xs"
+        >
+          📤 Compartir
+        </button>
+      </div>
 
       {/* Tiles de estadísticas */}
       <div className="grid grid-cols-2 gap-3">
@@ -227,6 +237,10 @@ export default function ProgresoPage() {
           );
         })}
       </section>
+
+      {shareOpen && stats && (
+        <ShareCardModal stats={stats} onClose={() => setShareOpen(false)} />
+      )}
     </div>
   );
 }
