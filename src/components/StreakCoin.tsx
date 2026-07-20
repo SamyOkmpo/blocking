@@ -109,29 +109,58 @@ export function StreakCoin({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
           <LaurelBranch fill="#d98c12" vein="#a8630a" />
         </g>
 
-        {/* Emblema de llama — sombra (relieve) + cuerpo + tongue grabado + brillo */}
-        <path
-          d="M32 14 C36 22 42 26 42 34 C42 41.5 37.5 47 32 47 C26.5 47 22 41.5 22 34 C22 28 26 24 28 19 C28 23 31 24 31 20 C31.3 18 31.6 16 32 14 Z"
-          fill="#7a3d05"
-          opacity="0.45"
-          transform="translate(0.7 1.3)"
-        />
-        <path
-          d="M32 14 C36 22 42 26 42 34 C42 41.5 37.5 47 32 47 C26.5 47 22 41.5 22 34 C22 28 26 24 28 19 C28 23 31 24 31 20 C31.3 18 31.6 16 32 14 Z"
-          fill={`url(#${emblem})`}
-        />
-        <path
-          d="M32 27 C34.6 31 36 34 35 37.6 C34.2 40.6 32.4 42 31 41 C29 39.5 29.5 37 31 35 C30.3 33 31 30 32 27 Z"
-          fill="#b9720a"
-        />
-        <path
-          d="M28.4 20.5 C26.3 24.5 25.3 28.6 26.2 32.8"
-          fill="none"
-          stroke="#fff3c8"
-          strokeWidth="1.1"
-          strokeLinecap="round"
-          strokeOpacity="0.7"
-        />
+        {/* Emblema de fuego — glifo de llama con lengüetas, en relieve.
+            Grupo desplazado 1px a la izq. para compensar la lengua derecha.
+            Orden: sombra (relieve) → lengua der. → cuerpo → núcleo → brillo. */}
+        <g transform="translate(-1 0)">
+          {/* sombra en relieve (canal grabado abajo-derecha) */}
+          <g fill="#733806" opacity="0.5" transform="translate(0.8 1.3)">
+            <path d="M35.5 43.5 C36 37 37.2 31.5 39.6 27 C40.6 25 41.9 22.7 42.9 24.3 C43.9 26.2 43.7 30 42.7 34 C41.9 38 40.4 42 38.4 43.8 C37.2 44.7 35.7 44.6 35.5 43.5 Z" />
+            <path d="M30 47 C22.5 46 18.2 39.4 20.4 32.2 C21.9 27 25.6 24.2 26.2 19 C27.1 13.6 31 10.8 33.6 13.2 C37.4 16 36.4 21 32.6 22.6 C35.6 24.6 37.6 28 37.6 32.4 C37.6 40.4 34 45.8 30 47 Z" />
+          </g>
+          {/* lengua derecha */}
+          <path
+            d="M35.5 43.5 C36 37 37.2 31.5 39.6 27 C40.6 25 41.9 22.7 42.9 24.3 C43.9 26.2 43.7 30 42.7 34 C41.9 38 40.4 42 38.4 43.8 C37.2 44.7 35.7 44.6 35.5 43.5 Z"
+            fill={`url(#${emblem})`}
+          />
+          {/* cuerpo principal (punta ganchuda a la derecha) */}
+          <path
+            d="M30 47 C22.5 46 18.2 39.4 20.4 32.2 C21.9 27 25.6 24.2 26.2 19 C27.1 13.6 31 10.8 33.6 13.2 C37.4 16 36.4 21 32.6 22.6 C35.6 24.6 37.6 28 37.6 32.4 C37.6 40.4 34 45.8 30 47 Z"
+            fill={`url(#${emblem})`}
+          />
+          {/* valle grabado entre cuerpo y lengua */}
+          <path
+            d="M35.4 25.5 C34.7 30 34.9 36 36 41"
+            fill="none"
+            stroke="#7a3d05"
+            strokeWidth="0.8"
+            strokeOpacity="0.5"
+            strokeLinecap="round"
+          />
+          {/* núcleo interior */}
+          <path
+            d="M30.8 30 C33.4 34 34.6 37 33.6 40.2 C32.8 43 31 44.2 29.6 43.2 C27.8 41.8 28.2 39.2 29.6 37.2 C29 34.6 29.8 32.2 30.8 30 Z"
+            fill="#b9720a"
+          />
+          {/* filo de luz: borde superior-izquierdo del metal */}
+          <path
+            d="M20.9 33 C22.2 27.6 25.7 24.8 26.3 19.6 C27 15 30.3 12.5 32.7 14.2"
+            fill="none"
+            stroke="#fff3c8"
+            strokeWidth="1"
+            strokeLinecap="round"
+            strokeOpacity="0.7"
+          />
+          {/* brillo interior de la punta */}
+          <path
+            d="M31.4 16 C29.4 19.4 28.9 22.8 29.7 25.8"
+            fill="none"
+            stroke="#fff3c8"
+            strokeWidth="1.1"
+            strokeLinecap="round"
+            strokeOpacity="0.75"
+          />
+        </g>
 
         {/* Estrella inferior */}
         <path
