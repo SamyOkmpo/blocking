@@ -6,9 +6,9 @@ import { LEVELS } from '@/lib/levels';
 
 /**
  * Mapa de niveles: obtenidos, el actual (con lo que falta para el
- * siguiente) y los bloqueados. Se monta con un portal a document.body por
- * la misma razón que StreakShop — evita quedar atrapado dentro del
- * backdrop-blur del header.
+ * siguiente) y los bloqueados. Se monta con un portal a document.body para
+ * evitar quedar atrapado dentro del backdrop-blur/transform del header (que
+ * crea un containing block nuevo y rompería el position:fixed del modal).
  */
 export function LevelsModal({
   totalXp,

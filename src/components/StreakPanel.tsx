@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useApp } from './AppProvider';
 import { StreakMascot } from './StreakMascot';
-import { StreakShop } from './StreakShop';
 import {
   LONG_STREAK_THRESHOLD,
   lostStreakBuyWindowLeftMs,
@@ -29,7 +29,6 @@ function formatLeft(ms: number): string {
 export function StreakPanel() {
   const { stats, todayBlocks, sessions, notice, dismissNotice } = useApp();
   const [, setTick] = useState(0);
-  const [shopOpen, setShopOpen] = useState(false);
 
   // Tick por segundo solo mientras la ventana de reparación está activa
   const windowLeft = stats ? repairWindowLeftMs(stats) : 0;
@@ -96,9 +95,9 @@ export function StreakPanel() {
 
       {/* ❤️‍🔥 Ventana gratis vencida, pero todavía se puede comprar en la tienda */}
       {canBuyRevival && (
-        <button
-          onClick={() => setShopOpen(true)}
-          className="card w-full animate-pop-in border-danger/40 bg-gradient-to-br from-night-850 to-danger/10 text-left transition-transform active:scale-[0.98]"
+        <Link
+          href="/tienda"
+          className="card block w-full animate-pop-in border-danger/40 bg-gradient-to-br from-night-850 to-danger/10 text-left transition-transform active:scale-[0.98]"
         >
           <p className="font-display text-base font-bold text-white">
             ❤️‍🔥 Tu racha de {stats.lost_streak}{' '}
@@ -108,7 +107,7 @@ export function StreakPanel() {
             Ya se venció lo gratis, pero puedes revivirla con monedas de
             racha en la tienda 🪙
           </p>
-        </button>
+        </Link>
       )}
 
       {/* Estado de racha + protectores */}
@@ -184,8 +183,6 @@ export function StreakPanel() {
           Cubren un día vacío automáticamente.
         </p>
       </div>
-
-      {shopOpen && <StreakShop onClose={() => setShopOpen(false)} />}
     </div>
   );
 }
