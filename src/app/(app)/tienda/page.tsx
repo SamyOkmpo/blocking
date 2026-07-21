@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import confetti from 'canvas-confetti';
 import { useApp } from '@/components/AppProvider';
 import { Brasa } from '@/components/Brasa';
-import { ThemeGlyph, FrameAvatar, HeartFire } from '@/components/shop/ShopGlyphs';
+import { ThemePreview, FrameAvatar, HeartFire } from '@/components/shop/ShopGlyphs';
 import { createClient } from '@/lib/supabase/client';
 import {
   buyStreakRevival,
@@ -241,16 +241,7 @@ export default function TiendaPage() {
                   canAfford={stats.streak_coins >= theme.price}
                   onBuy={() => handleBuyTheme(theme)}
                   onEquip={() => handleEquipTheme(theme.id)}
-                  preview={
-                    <div
-                      className="flex h-full w-full items-center justify-center"
-                      style={{
-                        background: `linear-gradient(135deg, rgb(${theme.rgb[300]}), rgb(${theme.rgb[700]}))`,
-                      }}
-                    >
-                      <ThemeGlyph id={theme.id} className="h-11 w-11" />
-                    </div>
-                  }
+                  preview={<ThemePreview rgb={theme.rgb} />}
                   extra={
                     !active && (
                       <button

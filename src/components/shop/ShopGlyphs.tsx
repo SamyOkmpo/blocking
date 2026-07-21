@@ -1,81 +1,60 @@
 /**
  * Glifos SVG de la tienda — reemplazan a los emojis de los productos.
  *
- * Los íconos de tema son siluetas rellenas en blanco pensadas para ir sobre
- * el degradado de color del propio tema (por eso usan fill blanco y leen bien
- * en cualquier color). El avatar de marcos y el corazón en llamas del rescate
- * usan currentColor / colores propios.
+ * La vista previa de un tema es un mini-mockup de la propia app pintado con
+ * su paleta (demuestra el efecto real, no un ícono decorativo). El avatar de
+ * marcos y el corazón en llamas del rescate usan currentColor / colores
+ * propios.
  */
-import type { CSSProperties } from 'react';
 
-/** Ícono relleno de cada tema, elegido por su id (cae al orbe por defecto). */
-export function ThemeGlyph({
-  id,
-  className,
-  style,
-}: {
-  id: string;
-  className?: string;
-  style?: CSSProperties;
-}) {
+/** Paleta 300..700 de un tema en formato "R G B". */
+type Palette = { 300: string; 400: string; 500: string; 600: string; 700: string };
+
+/**
+ * Vista previa de un tema: un recorte de la interfaz real —barra de XP,
+ * botón de acción y la escala de color— pintado con el acento del tema, sobre
+ * el fondo oscuro de la app. Así se ve *cómo quedará* la app con ese tema, en
+ * vez de una silueta que no representa nada. Se genera solo desde los rgb, así
+ * que sirve para cualquier tema, presente o futuro.
+ */
+export function ThemePreview({ rgb }: { rgb: Palette }) {
+  const c = (k: keyof Palette) => `rgb(${rgb[k]})`;
   return (
-    <svg viewBox="0 0 48 48" className={className} style={style} aria-hidden="true">
-      {THEME_PATHS[id] ?? THEME_PATHS.violet}
-    </svg>
+    <div className="flex h-full w-full flex-col justify-center gap-2 bg-night-900 px-3.5">
+      {/* nivel + barra de XP */}
+      <div className="flex items-center gap-2">
+        <span
+          className="h-4 w-4 shrink-0 rounded-md"
+          style={{ background: c(600) }}
+        />
+        <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-night-700">
+          <span
+            className="block h-full w-[72%] rounded-full"
+            style={{ background: `linear-gradient(90deg, ${c(600)}, ${c(400)})` }}
+          />
+        </span>
+      </div>
+      {/* botón + escala de color */}
+      <div className="flex items-center gap-2">
+        <span
+          className="rounded-md px-2 py-1 text-[8px] font-bold text-white"
+          style={{ background: c(600) }}
+        >
+          Empezar
+        </span>
+        <span className="ml-auto flex gap-1">
+          {([300, 400, 500, 600, 700] as const).map((k) => (
+            <i
+              key={k}
+              className="h-2 w-2 rounded-full"
+              style={{ background: c(k) }}
+            />
+          ))}
+        </span>
+      </div>
+    </div>
   );
 }
-
-const THEME_PATHS: Record<string, JSX.Element> = {
-  // Orbe / cristal
-  violet: (
-    <g fill="#fff">
-      <circle cx="22" cy="26" r="12.5" />
-      <circle cx="22" cy="26" r="12.5" fill="none" stroke="rgba(0,0,0,0.10)" strokeWidth="1.4" />
-      <path d="M35 10 l1.7 3.8 3.8 1.7 -3.8 1.7 -1.7 3.8 -1.7 -3.8 -3.8 -1.7 3.8 -1.7 Z" />
-    </g>
-  ),
-  // Olas
-  ocean: (
-    <g fill="#fff">
-      <path d="M7 15 C12 11 17 19 24 15 C31 11 36 19 41 15 L41 18 C36 22 31 14 24 18 C17 22 12 14 7 18 Z" />
-      <path d="M7 23 C12 19 17 27 24 23 C31 19 36 27 41 23 L41 26 C36 30 31 22 24 26 C17 30 12 22 7 26 Z" />
-      <path d="M7 31 C12 27 17 35 24 31 C31 27 36 35 41 31 L41 34 C36 38 31 30 24 34 C17 38 12 30 7 34 Z" />
-    </g>
-  ),
-  // Pino
-  forest: (
-    <g fill="#fff">
-      <rect x="22" y="33" width="4" height="8" rx="1.2" />
-      <path d="M24 8 L15 24 H33 Z" />
-      <path d="M24 17 L12.5 35 H35.5 Z" />
-    </g>
-  ),
-  // Llama
-  ember: (
-    <path
-      fill="#fff"
-      d="M24 8 C29 15 31.5 20 30.5 26.5 C29.5 33 26 36.5 24 36.5 C22 36.5 17.5 32.5 17.5 26.5 C17.5 21 20.5 17 22 20.5 C22.6 16 24 12 24 8 Z"
-    />
-  ),
-  // Flor
-  rose: (
-    <g fill="#fff">
-      <circle cx="24" cy="14.5" r="5.4" />
-      <circle cx="33" cy="21" r="5.4" />
-      <circle cx="29.6" cy="31.5" r="5.4" />
-      <circle cx="18.4" cy="31.5" r="5.4" />
-      <circle cx="15" cy="21" r="5.4" />
-      <circle cx="24" cy="24" r="3" fill="rgba(0,0,0,0.16)" />
-    </g>
-  ),
-  // Corona
-  gold: (
-    <g fill="#fff">
-      <path d="M10.5 32 L13 16 L20.5 24.5 L24 13 L27.5 24.5 L35 16 L37.5 32 Z" />
-      <rect x="10.5" y="32" width="27" height="5" rx="1.6" />
-    </g>
-  ),
-};
 
 /** Silueta de avatar para la vista previa de marcos (el aro/glow lo pone el CSS). */
 export function FrameAvatar({ className }: { className?: string }) {
