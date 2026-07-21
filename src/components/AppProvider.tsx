@@ -221,6 +221,9 @@ export function AppProvider({
     if (!activeBlock || sessions[activeBlock.id] || busyRef.current) return;
     busyRef.current = true;
     (async () => {
+      // ignoreDuplicates: true → si ya hay una sesión para este bloque+día NO
+      // la sobrescribe (podría estar 'completed' o 'failed' y perderíamos ese
+      // estado). Solo inserta una 'active' cuando de verdad no existe ninguna.
       const { data } = await supabase
         .from('block_sessions')
         .upsert(
@@ -230,15 +233,24 @@ export function AppProvider({
             date: localDateStr(),
             status: 'active',
           },
-          { onConflict: 'time_block_id,date', ignoreDuplicates: false }
+          { onConflict: 'time_block_id,date', ignoreDuplicates: true }
         )
         .select()
-        .single();
-      if (data) {
-        setSessions((prev) => ({
-          ...prev,
-          [activeBlock.id]: data as BlockSession,
-        }));
+        .maybeSingle();
+      // Si hubo conflicto (ya existía), recupérala tal cual está en la BD para
+      // no dejar el estado local vacío (evita bloquear un bloque ya completado).
+      let row = data as BlockSession | null;
+      if (!row) {
+        const { data: existing } = await supabase
+          .from('block_sessions')
+          .select('*')
+          .eq('time_block_id', activeBlock.id)
+          .eq('date', localDateStr())
+          .maybeSingle();
+        row = existing as BlockSession | null;
+      }
+      if (row) {
+        setSessions((prev) => ({ ...prev, [activeBlock.id]: row as BlockSession }));
       }
       busyRef.current = false;
     })();
@@ -257,9 +269,14 @@ export function AppProvider({
     });
     if (expired.length === 0) return;
     (async () => {
+      let failedTitle: string | null = null;
       for (const b of expired) {
-        let s = sessions[b.id];
-        if (!s) {
+        const local = sessions[b.id];
+        if (!local) {
+          // Sin sesión local. Inserta una 'failed' SOLO si no existe ninguna
+          // (ignoreDuplicates: true nunca sobrescribe una 'completed' de otra
+          // pestaña/deploy). Si ya existía, la ignoramos: su estado real
+          // llegará en el próximo refresh y, si sigue 'active', se fallará ahí.
           const { data } = await supabase
             .from('block_sessions')
             .upsert(
@@ -267,21 +284,23 @@ export function AppProvider({
                 user_id: userId,
                 time_block_id: b.id,
                 date: localDateStr(),
-                status: 'active',
+                status: 'failed',
               },
-              { onConflict: 'time_block_id,date', ignoreDuplicates: false }
+              { onConflict: 'time_block_id,date', ignoreDuplicates: true }
             )
-            .select()
-            .single();
-          if (!data) continue;
-          s = data as BlockSession;
+            .select();
+          if (data && data.length > 0) failedTitle = b.title;
+          continue;
         }
-        const marked = await markBlockFailed(supabase, { sessionId: s.id });
-        if (marked) {
-          setNotice(
-            `💛 "${b.title}" quedó incompleto — no pasa nada. Tu llama sigue viva: completa un bloque hoy y tu racha sigue en pie.`
-          );
-        }
+        // markBlockFailed solo actúa si la sesión sigue 'active' (nunca toca
+        // una 'completed'), así que una completada queda intacta.
+        const marked = await markBlockFailed(supabase, { sessionId: local.id });
+        if (marked) failedTitle = b.title;
+      }
+      if (failedTitle) {
+        setNotice(
+          `💛 "${failedTitle}" quedó incompleto — no pasa nada. Tu llama sigue viva: completa un bloque hoy y tu racha sigue en pie.`
+        );
       }
       await refresh();
     })();
