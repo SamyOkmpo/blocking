@@ -156,10 +156,10 @@ export default function TiendaPage() {
         <h1 className="font-display text-2xl font-bold text-white">Tienda</h1>
         <div
           title="Brasas de racha"
-          className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-gradient-to-br from-amber-500/15 to-orange-600/10 px-3 py-1.5"
+          className="flex items-center gap-1 rounded-full border border-amber-500/30 bg-gradient-to-br from-amber-500/15 to-orange-600/10 px-2.5 py-1"
         >
-          <Brasa size="md" />
-          <span className="font-display text-base font-bold tabular-nums text-amber-300">
+          <Brasa size="sm" />
+          <span className="font-display text-sm font-bold tabular-nums text-amber-300">
             {stats.streak_coins}
           </span>
         </div>
