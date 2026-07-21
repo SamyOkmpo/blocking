@@ -56,7 +56,7 @@ export function lostStreakBuyWindowLeftMs(
   return Math.max(0, deadline - now.getTime());
 }
 
-/** Precio en monedas de racha 🪙 para revivir una racha perdida de este tamaño. */
+/** Precio en brasas de racha 🔥 para revivir una racha perdida de este tamaño. */
 export function streakRevivalPrice(lostStreak: number): number {
   return lostStreak + 5;
 }
@@ -72,7 +72,7 @@ export interface RewardResult {
   streakRevived: boolean; // ❤️‍🔥 rescate gratis: día completo dentro de la ventana
   shieldEarned: boolean; // 🛡️ nueva semana de racha completada
   isPerfect: boolean; // 💎 bloque terminado con tiempo de sobra
-  coinsEarned: number; // 🪙 monedas de racha ganadas (1 por día de racha)
+  coinsEarned: number; // 🔥 brasas de racha ganadas (1 por día de racha)
 }
 
 /** Logros cuyo requisito ya se cumple pero aún no están desbloqueados. */
@@ -157,7 +157,7 @@ export async function awardBlockCompletion(
     }
     lastStreakDate = today;
     dayCompleted = true;
-    coinsEarned = 1; // 🪙 una moneda de racha por cada día que la racha crece
+    coinsEarned = 1; // 🔥 una brasa de racha por cada día que la racha crece
     xp += streakBonusXp(streak);
 
     // 🛡️ Cada semana completa de racha da un protector (tope según la racha)
@@ -286,7 +286,7 @@ export async function buyStreakRevival(
   }
   const price = streakRevivalPrice(stats.lost_streak);
   if (stats.streak_coins < price) {
-    return { ok: false, error: 'No te alcanzan las monedas de racha.' };
+    return { ok: false, error: 'No te alcanzan las brasas de racha.' };
   }
 
   const today = localDateStr();

@@ -104,8 +104,8 @@ export function StreakPanel() {
             {stats.lost_streak === 1 ? 'día' : 'días'} sigue disponible
           </p>
           <p className="mt-1 text-sm text-slate-400">
-            Ya se venció lo gratis, pero puedes revivirla con monedas de
-            racha en la tienda 🪙
+            Ya se venció lo gratis, pero puedes revivirla con brasas de
+            racha en la tienda 🔥
           </p>
         </Link>
       )}

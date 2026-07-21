@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import confetti from 'canvas-confetti';
 import { useApp } from '@/components/AppProvider';
-import { StreakCoin } from '@/components/StreakCoin';
+import { Brasa } from '@/components/Brasa';
 import { ThemeGlyph, FrameAvatar, HeartFire } from '@/components/shop/ShopGlyphs';
 import { createClient } from '@/lib/supabase/client';
 import {
@@ -32,30 +32,11 @@ import {
 const GOLD_CONFETTI = ['#fbbf24', '#f59e0b', '#fde68a'];
 
 type Filter = 'todo' | 'temas' | 'marcos' | 'coleccion';
-type Featured =
-  | { kind: 'tema'; entry: Theme }
-  | { kind: 'marco'; entry: Frame };
-
-/** Milisegundos hasta el final del día local — para el contador del destacado. */
-function msUntilEndOfDay(): number {
-  const now = new Date();
-  const end = new Date(now);
-  end.setHours(24, 0, 0, 0);
-  return end.getTime() - now.getTime();
-}
-
-function formatCountdown(ms: number): string {
-  const s = Math.max(0, Math.floor(ms / 1000));
-  const h = String(Math.floor(s / 3600)).padStart(2, '0');
-  const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-  const ss = String(s % 60).padStart(2, '0');
-  return `${h}:${m}:${ss}`;
-}
 
 /**
- * Tienda como página completa (`/tienda`): saldo, destacado del día, rescate
- * de racha (comprable con monedas), y vitrinas de temas y marcos con vista
- * previa real. Todo cosmético se paga con monedas de racha 🪙.
+ * Tienda como página completa (`/tienda`): saldo, rescate de racha (comprable
+ * con brasas), y vitrinas de temas y marcos con vista previa real. Todo
+ * cosmético se paga con brasas de racha 🔥.
  */
 export default function TiendaPage() {
   const { userId, stats, refresh } = useApp();
@@ -64,14 +45,6 @@ export default function TiendaPage() {
   const [previewThemeId, setPreviewThemeId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState('');
-
-  useEffect(() => {
-    const update = () => setCountdown(formatCountdown(msUntilEndOfDay()));
-    update();
-    const id = setInterval(update, 1000);
-    return () => clearInterval(id);
-  }, []);
 
   // Vista previa en vivo de un tema; al salir vuelve al tema activo real.
   useEffect(() => {
@@ -158,19 +131,6 @@ export default function TiendaPage() {
     await refresh();
   }
 
-  // Destacado del día: un ítem no poseído, rota una vez al día.
-  const featuredPool: Featured[] = [
-    ...THEMES.filter((t) => !stats.unlocked_themes.includes(t.id)).map(
-      (entry): Featured => ({ kind: 'tema', entry })
-    ),
-    ...FRAMES.filter((f) => !stats.unlocked_frames.includes(f.id)).map(
-      (entry): Featured => ({ kind: 'marco', entry })
-    ),
-  ];
-  const dayIdx = Math.floor(Date.now() / 86_400_000);
-  const featured =
-    featuredPool.length > 0 ? featuredPool[dayIdx % featuredPool.length] : null;
-
   const showThemes = filter === 'todo' || filter === 'temas' || filter === 'coleccion';
   const showFrames = filter === 'todo' || filter === 'marcos' || filter === 'coleccion';
   const onlyOwned = filter === 'coleccion';
@@ -194,16 +154,14 @@ export default function TiendaPage() {
       {/* Cabecera + saldo */}
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold text-white">Tienda</h1>
-        <div className="flex items-center gap-2.5 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/15 to-orange-600/10 px-3 py-2">
-          <StreakCoin size="lg" />
-          <div className="leading-none">
-            <p className="font-display text-xl font-bold tabular-nums text-amber-300">
-              {stats.streak_coins}
-            </p>
-            <p className="mt-0.5 text-[9px] uppercase tracking-widest text-amber-200/70">
-              monedas
-            </p>
-          </div>
+        <div
+          title="Brasas de racha"
+          className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-gradient-to-br from-amber-500/15 to-orange-600/10 px-3 py-1.5"
+        >
+          <Brasa size="md" />
+          <span className="font-display text-base font-bold tabular-nums text-amber-300">
+            {stats.streak_coins}
+          </span>
         </div>
       </div>
 
@@ -211,22 +169,7 @@ export default function TiendaPage() {
         <p className="rounded-xl bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>
       )}
 
-      {/* Destacado del día */}
-      {featured && (
-        <FeaturedHero
-          featured={featured}
-          countdown={countdown}
-          busy={busyId === featured.entry.id}
-          canAfford={stats.streak_coins >= featured.entry.price}
-          onBuy={() =>
-            featured.kind === 'tema'
-              ? handleBuyTheme(featured.entry)
-              : handleBuyFrame(featured.entry)
-          }
-        />
-      )}
-
-      {/* Rescate de racha (se compra con monedas) */}
+      {/* Rescate de racha (se compra con brasas) */}
       {canBuyRevival && (
         <div className="relative overflow-hidden rounded-2xl border border-rose-500/50 bg-gradient-to-br from-night-800 to-danger/10 p-4">
           <div className="flex items-center gap-3">
@@ -253,7 +196,7 @@ export default function TiendaPage() {
               'Reviviendo…'
             ) : (
               <>
-                Revivir por <StreakCoin size="sm" /> {revivalPrice}
+                Revivir por <Brasa size="sm" /> {revivalPrice}
               </>
             )}
           </button>
@@ -482,7 +425,7 @@ function ProductCard({
           <span className="text-[11px] text-slate-500">Incluido</span>
         ) : (
           <span className="flex items-center gap-1 text-[13px] font-bold tabular-nums text-amber-300">
-            <StreakCoin size="sm" /> {price}
+            <Brasa size="sm" /> {price}
           </span>
         )}
 
@@ -514,78 +457,6 @@ function ProductCard({
       </div>
 
       {extra}
-    </div>
-  );
-}
-
-function FeaturedHero({
-  featured,
-  countdown,
-  busy,
-  canAfford,
-  onBuy,
-}: {
-  featured: Featured;
-  countdown: string;
-  busy: boolean;
-  canAfford: boolean;
-  onBuy: () => void;
-}) {
-  const { entry } = featured;
-  const kindLabel = featured.kind === 'tema' ? 'Tema' : 'Marco';
-
-  return (
-    <div className="relative overflow-hidden rounded-3xl border border-amber-500/50 bg-gradient-to-b from-night-800 to-night-850 p-5 shadow-[0_0_26px_-6px_rgba(245,158,11,0.35)]">
-      {isShimmering(entry.rarity) && <ShimmerOverlay />}
-      <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-amber-200/80">
-        <span>✨ Destacado de hoy · {kindLabel}</span>
-        <span className="ml-auto rounded-md bg-black/25 px-2 py-0.5 font-display tabular-nums text-amber-300">
-          {countdown}
-        </span>
-      </div>
-
-      <div className="mt-3 flex items-center gap-4">
-        <span
-          className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl shadow-inner"
-          style={
-            featured.kind === 'tema'
-              ? {
-                  background: `linear-gradient(135deg, rgb(${featured.entry.rgb[300]}), rgb(${featured.entry.rgb[700]}))`,
-                }
-              : { background: '#101022', ...frameRingStyle(featured.entry.id) }
-          }
-        >
-          {featured.kind === 'tema' ? (
-            <ThemeGlyph id={featured.entry.id} className="h-11 w-11" />
-          ) : (
-            <FrameAvatar className="h-9 w-9 text-night-600" />
-          )}
-        </span>
-        <div className="min-w-0">
-          <h2 className="font-display text-xl font-bold text-white">{entry.name}</h2>
-          <span
-            className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${RARITY_BADGE_CLASS[entry.rarity]}`}
-          >
-            {RARITY_LABEL[entry.rarity]}
-          </span>
-        </div>
-      </div>
-
-      <button
-        onClick={onBuy}
-        disabled={busy || !canAfford}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-amber-300 to-amber-500 py-3 font-display font-bold text-amber-950 shadow-lg shadow-amber-500/30 transition-transform active:scale-95 disabled:opacity-40"
-      >
-        {busy ? (
-          'Comprando…'
-        ) : canAfford ? (
-          <>
-            Comprar por <StreakCoin size="sm" /> {entry.price}
-          </>
-        ) : (
-          <>Necesitas {entry.price} monedas</>
-        )}
-      </button>
     </div>
   );
 }
