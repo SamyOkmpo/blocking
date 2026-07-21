@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { useApp } from './AppProvider';
+import { Brasa } from './Brasa';
 import { achievementDef } from '@/lib/achievements';
 import { LEVELS } from '@/lib/levels';
 import { playUnlockSound } from '@/lib/sound';
@@ -107,8 +108,9 @@ export function RewardOverlay() {
               días y contando.
             </p>
             {reward.coinsEarned > 0 && (
-              <p className="mt-2 text-xs font-semibold text-amber-300">
-                🪙 +{reward.coinsEarned} moneda de racha
+              <p className="mt-2 flex items-center justify-center gap-1 text-xs font-semibold text-amber-300">
+                <Brasa size="sm" /> +{reward.coinsEarned}{' '}
+                {reward.coinsEarned === 1 ? 'brasa' : 'brasas'} de racha
               </p>
             )}
           </>
@@ -153,8 +155,9 @@ export function RewardOverlay() {
               {flavor.dayCompleted}
             </p>
             {reward.coinsEarned > 0 && (
-              <p className="mt-2 text-xs font-semibold text-amber-300">
-                🪙 +{reward.coinsEarned} moneda de racha
+              <p className="mt-2 flex items-center justify-center gap-1 text-xs font-semibold text-amber-300">
+                <Brasa size="sm" /> +{reward.coinsEarned}{' '}
+                {reward.coinsEarned === 1 ? 'brasa' : 'brasas'} de racha
               </p>
             )}
           </div>

@@ -110,7 +110,7 @@ export async function buyTheme(
     return { ok: false, error: 'Ya tienes este tema.' };
   }
   if (opts.stats.streak_coins < theme.price) {
-    return { ok: false, error: 'No te alcanzan las monedas de racha.' };
+    return { ok: false, error: 'No te alcanzan las brasas de racha.' };
   }
   const { error } = await supabase
     .from('user_stats')
