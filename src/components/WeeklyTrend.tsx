@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { DAY_LABELS, localDateStr } from '@/lib/time';
-import type { BlockSession } from '@/lib/types';
+import { DAY_LABELS, dayBlockStats, localDateStr } from '@/lib/time';
+import type { BlockSession, TimeBlock } from '@/lib/types';
 
 interface DayPoint {
   date: string;
@@ -15,8 +15,18 @@ interface DayPoint {
 /**
  * Tendencia de los últimos 7 días: % de bloques completados por día.
  * Barras finas con extremos redondeados; tap en una barra muestra el detalle.
+ *
+ * El total de cada día sale de los bloques programados (misma fuente que el
+ * calendario), no del número de sesiones, para que una sesión huérfana no
+ * cuente un bloque de más.
  */
-export function WeeklyTrend({ sessions }: { sessions: BlockSession[] }) {
+export function WeeklyTrend({
+  sessions,
+  blocks,
+}: {
+  sessions: BlockSession[];
+  blocks: TimeBlock[];
+}) {
   const [selected, setSelected] = useState<number | null>(null);
 
   const points = useMemo<DayPoint[]>(() => {
@@ -25,25 +35,17 @@ export function WeeklyTrend({ sessions }: { sessions: BlockSession[] }) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const date = localDateStr(d);
-      const daySessions = sessions.filter(
-        (s) => s.date === date && s.status !== 'active'
-      );
-      const completed = daySessions.filter(
-        (s) => s.status === 'completed'
-      ).length;
+      const { completed, total } = dayBlockStats(blocks, sessions, d);
       days.push({
         date,
         label: DAY_LABELS[d.getDay()],
-        pct:
-          daySessions.length > 0
-            ? Math.round((completed / daySessions.length) * 100)
-            : null,
+        pct: total > 0 ? Math.round((completed / total) * 100) : null,
         completed,
-        total: daySessions.length,
+        total,
       });
     }
     return days;
-  }, [sessions]);
+  }, [sessions, blocks]);
 
   const maxIdx = points.reduce(
     (best, p, i) =>
