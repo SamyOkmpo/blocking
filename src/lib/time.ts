@@ -1,4 +1,4 @@
-import type { TimeBlock } from './types';
+import type { BlockSession, TimeBlock } from './types';
 
 /** "YYYY-MM-DD" en hora local del dispositivo. */
 export function localDateStr(d: Date = new Date()): string {
@@ -74,6 +74,50 @@ export function blockOccursOn(block: TimeBlock, date: Date): boolean {
     case 'once':
       return block.date === localDateStr(date);
   }
+}
+
+/**
+ * ¿El bloque ya concluyó en la fecha dada? En un día pasado siempre sí; hoy,
+ * solo si su franja horaria ya terminó; en el futuro, todavía no. Sirve para
+ * no penalizar en las estadísticas un bloque que aún no llega su hora.
+ */
+export function blockConcludedOn(
+  block: TimeBlock,
+  date: Date,
+  now: Date = new Date()
+): boolean {
+  const dateStr = localDateStr(date);
+  const todayStr = localDateStr(now);
+  if (dateStr < todayStr) return true;
+  if (dateStr > todayStr) return false;
+  return blockPhase(block, now) === 'past';
+}
+
+/**
+ * Cumplimiento de un día basado en los bloques REALMENTE programados para esa
+ * fecha (misma fuente de verdad que el calendario), no en el número de filas
+ * de `block_sessions`. Así una sesión huérfana —de un bloque archivado o cuya
+ * recurrencia cambió y ya no cae ese día— no infla el total y desvirtúa el %.
+ */
+export function dayBlockStats(
+  blocks: TimeBlock[],
+  sessions: Pick<BlockSession, 'time_block_id' | 'date' | 'status'>[],
+  date: Date,
+  now: Date = new Date()
+): { completed: number; total: number } {
+  const dateStr = localDateStr(date);
+  const due = blocks.filter(
+    (b) => blockOccursOn(b, date) && blockConcludedOn(b, date, now)
+  );
+  const completed = due.filter((b) =>
+    sessions.some(
+      (s) =>
+        s.time_block_id === b.id &&
+        s.date === dateStr &&
+        s.status === 'completed'
+    )
+  ).length;
+  return { completed, total: due.length };
 }
 
 export type BlockPhase = 'upcoming' | 'active' | 'past';

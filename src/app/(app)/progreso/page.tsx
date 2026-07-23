@@ -7,8 +7,8 @@ import { Heatmap } from '@/components/Heatmap';
 import { ShareCardModal } from '@/components/ShareCardModal';
 import { WeeklyTrend } from '@/components/WeeklyTrend';
 import { ACHIEVEMENTS } from '@/lib/achievements';
-import { localDateStr, MONTH_NAMES } from '@/lib/time';
-import type { Achievement, BlockSession } from '@/lib/types';
+import { dayBlockStats, localDateStr, MONTH_NAMES } from '@/lib/time';
+import type { Achievement, BlockSession, TimeBlock } from '@/lib/types';
 
 const CATEGORY_ORDER: [string, string][] = [
   ['racha', 'Rachas'],
@@ -27,6 +27,7 @@ export default function ProgresoPage() {
   const [month, setMonth] = useState(now.getMonth()); // 0-11
   const [monthSessions, setMonthSessions] = useState<BlockSession[]>([]);
   const [weekSessions, setWeekSessions] = useState<BlockSession[]>([]);
+  const [blocks, setBlocks] = useState<TimeBlock[]>([]);
   const [unlocked, setUnlocked] = useState<Achievement[]>([]);
   const [shareOpen, setShareOpen] = useState(false);
 
@@ -51,28 +52,41 @@ export default function ProgresoPage() {
     (async () => {
       const from = new Date();
       from.setDate(from.getDate() - 6);
-      const [sessRes, achRes] = await Promise.all([
+      const [sessRes, blocksRes, achRes] = await Promise.all([
         supabase
           .from('block_sessions')
           .select('*')
           .eq('user_id', userId)
           .gte('date', localDateStr(from)),
+        supabase
+          .from('time_blocks')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('is_archived', false),
         supabase.from('achievements').select('*').eq('user_id', userId),
       ]);
       setWeekSessions((sessRes.data as BlockSession[]) ?? []);
+      setBlocks((blocksRes.data as TimeBlock[]) ?? []);
       setUnlocked((achRes.data as Achievement[]) ?? []);
     })();
   }, [supabase, userId]);
 
-  const weekFinished = weekSessions.filter((s) => s.status !== 'active');
+  // Cumplimiento de los últimos 7 días sobre los bloques programados (misma
+  // fuente que el calendario), no sobre el número de filas de sesiones.
+  const week = useMemo(() => {
+    let completed = 0;
+    let total = 0;
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const s = dayBlockStats(blocks, weekSessions, d);
+      completed += s.completed;
+      total += s.total;
+    }
+    return { completed, total };
+  }, [blocks, weekSessions]);
   const weekPct =
-    weekFinished.length > 0
-      ? Math.round(
-          (weekFinished.filter((s) => s.status === 'completed').length /
-            weekFinished.length) *
-            100
-        )
-      : null;
+    week.total > 0 ? Math.round((week.completed / week.total) * 100) : null;
 
   const unlockedTypes = new Set(unlocked.map((a) => a.achievement_type));
 
@@ -146,7 +160,7 @@ export default function ProgresoPage() {
         <h2 className="mb-4 font-display text-sm font-bold text-white">
           Bloques completados por día
         </h2>
-        <WeeklyTrend sessions={weekSessions} />
+        <WeeklyTrend sessions={weekSessions} blocks={blocks} />
       </section>
 
       {/* Heatmap mensual */}
