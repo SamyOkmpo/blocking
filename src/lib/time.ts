@@ -60,6 +60,18 @@ function createdAfterStartOn(block: TimeBlock, date: Date): boolean {
   return createdMinutes >= timeToMinutes(block.start_time);
 }
 
+/**
+ * ¿La fecha es anterior al día en que se creó el bloque? Un bloque recurrente
+ * no "ocurre" antes de existir: sin esto, mirar hacia atrás en las estadísticas
+ * contaría como fallados los días previos a haberlo creado.
+ */
+function beforeCreation(block: TimeBlock, date: Date): boolean {
+  if (!block.created_at) return false;
+  const created = new Date(block.created_at);
+  if (Number.isNaN(created.getTime())) return false;
+  return localDateStr(date) < localDateStr(created);
+}
+
 /** ¿Este bloque ocurre en la fecha dada (según su recurrencia)? */
 export function blockOccursOn(block: TimeBlock, date: Date): boolean {
   if (block.is_archived) return false;
@@ -68,9 +80,11 @@ export function blockOccursOn(block: TimeBlock, date: Date): boolean {
   if (createdAfterStartOn(block, date)) return false;
   switch (block.recurrence_type) {
     case 'daily':
-      return true;
+      return !beforeCreation(block, date);
     case 'weekly':
-      return block.days_of_week.includes(date.getDay());
+      return (
+        block.days_of_week.includes(date.getDay()) && !beforeCreation(block, date)
+      );
     case 'once':
       return block.date === localDateStr(date);
   }

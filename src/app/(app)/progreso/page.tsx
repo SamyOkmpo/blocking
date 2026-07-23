@@ -186,7 +186,12 @@ export default function ProgresoPage() {
             </button>
           </div>
         </div>
-        <Heatmap year={year} month={month} sessions={monthSessions} />
+        <Heatmap
+          year={year}
+          month={month}
+          sessions={monthSessions}
+          blocks={blocks}
+        />
       </section>
 
       {/* Logros */}

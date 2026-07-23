@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { localDateStr, MONTH_NAMES } from '@/lib/time';
-import type { BlockSession } from '@/lib/types';
+import { dayBlockStats, localDateStr, MONTH_NAMES } from '@/lib/time';
+import type { BlockSession, TimeBlock } from '@/lib/types';
 
 export type DayStatus = 'none' | 'completo';
 
@@ -15,12 +15,13 @@ const LEGEND: { status: DayStatus; label: string }[] = [
   { status: 'completo', label: 'Completado' },
 ];
 
-/** Un día cuenta como completo solo si TODOS sus bloques quedaron hechos. */
-export function dayStatus(daySessions: BlockSession[]): DayStatus {
-  return daySessions.length > 0 &&
-    daySessions.every((s) => s.status === 'completed')
-    ? 'completo'
-    : 'none';
+/**
+ * Un día cuenta como completo solo si TODOS sus bloques programados quedaron
+ * hechos. Se apoya en los bloques del día (misma fuente que el calendario),
+ * no en el número de sesiones, para que una sesión huérfana no lo estropee.
+ */
+export function dayStatus(completed: number, total: number): DayStatus {
+  return total > 0 && completed === total ? 'completo' : 'none';
 }
 
 /**
@@ -32,10 +33,12 @@ export function Heatmap({
   year,
   month, // 0-11
   sessions,
+  blocks,
 }: {
   year: number;
   month: number;
   sessions: BlockSession[];
+  blocks: TimeBlock[];
 }) {
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -63,6 +66,9 @@ export function Heatmap({
   ];
 
   const selectedSessions = selected ? (byDate.get(selected) ?? []) : [];
+  const selectedStats = selected
+    ? dayBlockStats(blocks, selectedSessions, new Date(`${selected}T12:00:00`))
+    : { completed: 0, total: 0 };
 
   return (
     <div>
@@ -74,7 +80,12 @@ export function Heatmap({
       <div className="grid grid-cols-7 gap-1.5">
         {cells.map((date, i) => {
           if (!date) return <span key={`pad-${i}`} />;
-          const status = dayStatus(byDate.get(date) ?? []);
+          const { completed, total } = dayBlockStats(
+            blocks,
+            byDate.get(date) ?? [],
+            new Date(`${date}T12:00:00`)
+          );
+          const status = dayStatus(completed, total);
           const isFuture = date > today;
           const isSelected = selected === date;
           return (
@@ -120,14 +131,12 @@ export function Heatmap({
               month: 'long',
             })}
           </p>
-          {selectedSessions.length === 0 ? (
-            <p className="mt-1 text-slate-500">Sin bloques registrados.</p>
+          {selectedStats.total === 0 ? (
+            <p className="mt-1 text-slate-500">Sin bloques ese día.</p>
           ) : (
             <p className="mt-1 text-slate-400">
-              {selectedSessions.filter((s) => s.status === 'completed').length}{' '}
+              {selectedStats.completed}/{selectedStats.total} bloques
               completados ·{' '}
-              {selectedSessions.filter((s) => s.status === 'failed').length}{' '}
-              fallidos ·{' '}
               {selectedSessions.reduce((acc, s) => acc + s.xp_earned, 0)} XP
             </p>
           )}
